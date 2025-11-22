@@ -1,8 +1,15 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { ArrowRight, Activity, Users, Trophy } from 'lucide-react';
 
 const Home = () => {
+    const { currentUser } = useAuth();
+
+    if (currentUser) {
+        return <Navigate to="/dashboard" replace />;
+    }
+
     return (
         <div className="container">
             <section style={{ padding: '4rem 0', textAlign: 'center' }}>
