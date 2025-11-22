@@ -45,12 +45,30 @@ const GroupDetail = () => {
         (a.name || '').localeCompare(b.name || '', 'tr')
     );
 
+    const [selectedSeasonId, setSelectedSeasonId] = useState('active');
+
+    useEffect(() => {
+        if (group?.activeSeasonId) {
+            setSelectedSeasonId(group.activeSeasonId);
+        } else {
+            setSelectedSeasonId('all-time');
+        }
+    }, [group?.activeSeasonId]);
+
     const activeSeason = group.activeSeasonId
         ? group.seasons?.find(s => s.id === group.activeSeasonId)
         : null;
 
-    const seasonStats = activeSeason ? getSeasonStats(groupId, activeSeason.id) : [];
-    const allTimeStats = getAllTimeStats(groupId);
+    // Determine which stats to show based on selection
+    const displayedStats = selectedSeasonId === 'all-time'
+        ? getAllTimeStats(groupId)
+        : getSeasonStats(groupId, selectedSeasonId);
+
+    // Filter matches based on selection
+    const displayedMatches = matches.filter(m => {
+        if (selectedSeasonId === 'all-time') return true;
+        return m.seasonId === selectedSeasonId;
+    });
 
     const copyCode = () => {
         navigator.clipboard.writeText(group.joinCode);
@@ -132,20 +150,52 @@ const GroupDetail = () => {
 
             {/* Season Section */}
             <div className="card" style={{ marginBottom: '2rem', borderLeft: '4px solid var(--accent-secondary)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: activeSeason ? '1rem' : '0' }}>
-                    <h3 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Trophy size={20} color="var(--accent-secondary)" />
-                        {activeSeason ? `Aktif Sezon: ${activeSeason.name}` : 'Aktif Sezon Yok'}
-                    </h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <h3 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Trophy size={20} color="var(--accent-secondary)" />
+                            Sezon:
+                        </h3>
+                        <select
+                            value={selectedSeasonId}
+                            onChange={(e) => setSelectedSeasonId(e.target.value)}
+                            style={{
+                                padding: '0.5rem',
+                                borderRadius: 'var(--radius-md)',
+                                border: '1px solid var(--border-color)',
+                                background: 'var(--bg-primary)',
+                                color: 'var(--text-primary)',
+                                fontSize: '1rem'
+                            }}
+                        >
+                            {activeSeason && (
+                                <option value={activeSeason.id}>
+                                    Aktif: {activeSeason.name}
+                                </option>
+                            )}
+                            <option value="all-time">Tüm Zamanlar</option>
+                            {(group.seasons || []).filter(s => s.id !== group.activeSeasonId && s.status === 'completed').length > 0 && (
+                                <optgroup label="Geçmiş Sezonlar">
+                                    {(group.seasons || [])
+                                        .filter(s => s.id !== group.activeSeasonId && s.status === 'completed')
+                                        .map(s => (
+                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                        ))
+                                    }
+                                </optgroup>
+                            )}
+                        </select>
+                    </div>
+
                     <div>
-                        {activeSeason ? (
+                        {activeSeason && selectedSeasonId === activeSeason.id ? (
                             isAdmin && (
                                 <button onClick={() => endSeason(groupId)} className="btn btn-secondary" style={{ color: '#ff4444', borderColor: '#ff4444' }}>
                                     <Square size={16} fill="#ff4444" /> Sezonu Bitir
                                 </button>
                             )
                         ) : (
-                            !showStartSeason && isAdmin && (
+                            !showStartSeason && isAdmin && !activeSeason && (
                                 <button onClick={() => setShowStartSeason(true)} className="btn btn-primary">
                                     <Play size={16} /> Sezon Başlat
                                 </button>
@@ -172,7 +222,7 @@ const GroupDetail = () => {
                 {/* Stats Table */}
                 <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
                     <h4 style={{ fontSize: '1rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
-                        {activeSeason ? 'Sezon İstatistikleri' : 'Genel İstatistikler (Tüm Zamanlar)'}
+                        {selectedSeasonId === 'all-time' ? 'Genel İstatistikler (Tüm Zamanlar)' : 'Sezon İstatistikleri'}
                     </h4>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                         <thead>
@@ -184,8 +234,8 @@ const GroupDetail = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {(activeSeason ? seasonStats : allTimeStats).length > 0 ? (
-                                (activeSeason ? seasonStats : allTimeStats).map((stat, index) => (
+                            {displayedStats.length > 0 ? (
+                                displayedStats.map((stat, index) => (
                                     <tr key={stat.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                         <td style={{ padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                             <span style={{
@@ -223,8 +273,8 @@ const GroupDetail = () => {
                     </h3>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {matches.length > 0 ? (
-                            matches.map(match => (
+                        {displayedMatches.length > 0 ? (
+                            displayedMatches.map(match => (
                                 <div key={match.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div>
                                         <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
