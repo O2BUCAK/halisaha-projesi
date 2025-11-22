@@ -53,8 +53,23 @@ const MatchDetail = () => {
     if (!match || !group) return <div>Maç bulunamadı.</div>;
 
     // Combine all available players and sort alphabetically
+    const currentUserId = currentUser.uid || currentUser.id;
+    const isCurrentUserMember = group.members.includes(currentUserId);
+    const isCurrentUserInDetails = memberDetails.some(m => m.id === currentUserId);
+
+    let effectiveMemberDetails = [...memberDetails];
+
+    // Eğer kullanıcı üye ise ama detaylarda yoksa (fetch gecikmesi veya hata), manuel ekle
+    if (isCurrentUserMember && !isCurrentUserInDetails) {
+        effectiveMemberDetails.push({
+            id: currentUserId,
+            name: currentUser.name || currentUser.displayName || 'Kullanıcı',
+            ...currentUser
+        });
+    }
+
     const allPlayers = [
-        ...memberDetails.map(m => ({ id: m.id, name: m.id === (currentUser.uid || currentUser.id) ? `${m.name} (Sen)` : m.name })),
+        ...effectiveMemberDetails.map(m => ({ id: m.id, name: m.id === currentUserId ? `${m.name} (Sen)` : m.name })),
         ...(group.guestPlayers || [])
     ].sort((a, b) => (a.name || 'Unknown').localeCompare(b.name || 'Unknown', 'tr'));
 
