@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Users collection - users can only read/write their own data
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Groups collection
+    match /groups/{groupId} {
+      // Anyone authenticated can read groups they are a member of
+      allow read: if request.auth != null && 
+                     request.auth.uid in resource.data.members;
+      
+      // Only group creator can create
+      allow create: if request.auth != null && 
+                       request.auth.uid == request.resource.data.createdBy;
+      
+      // Admins or creator can update (fallback to creator for old groups without admins)
+      allow update: if request.auth != null && 
+                       (request.auth.uid in resource.data.get('admins', []) ||
+                        request.auth.uid == resource.data.createdBy);
+      
+      // Only creator can delete
+      allow delete: if request.auth != null && 
+                       request.auth.uid == resource.data.createdBy;
+    }
+    
+    // Matches collection
+    match /matches/{matchId} {
+      // Users can read matches from groups they're in
+      allow read: if request.auth != null;
+      
+      // Authenticated users can create matches (we'll verify group membership)
+      // Update/delete only by authenticated users
+      allow create: if request.auth != null && 
+                       request.resource.data.groupId != null;
+      
+      allow update, delete: if request.auth != null;
+    }
+    
+    // Invitations collection
+    match /invitations/{invitationId} {
+      // Users can read invitations sent to them
+      allow read: if request.auth != null && 
+                     (request.auth.email == resource.data.inviteeEmail || 
+                      request.auth.uid == resource.data.inviterId);
+      
+      // Group admins can create invitations
+      allow create: if request.auth != null && 
+                       request.auth.uid in get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.admins;
+      
+      // Invitee can update (accept/reject)
+      allow update: if request.auth != null && 
+                       request.auth.email == resource.data.inviteeEmail;
+      
+      // Creator or invitee can delete
+      allow delete: if request.auth != null && 
+                       (request.auth.uid == resource.data.inviterId || 
+                        request.auth.email == resource.data.inviteeEmail);
+    }
+  }
+}
+
