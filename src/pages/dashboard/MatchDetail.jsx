@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { Trophy, Save, Users, UserPlus } from 'lucide-react';
+import { Trophy, Save, Users, UserPlus, Video, FileText, ExternalLink } from 'lucide-react';
 
 const MatchDetail = () => {
     const { matchId } = useParams();
@@ -21,6 +21,10 @@ const MatchDetail = () => {
     const [teamAName, setTeamAName] = useState(match?.teamAName || 'Takım A');
     const [teamBName, setTeamBName] = useState(match?.teamBName || 'Takım B');
 
+    // Media Links State
+    const [videoUrl, setVideoUrl] = useState(match?.videoUrl || '');
+    const [summaryUrl, setSummaryUrl] = useState(match?.summaryUrl || '');
+
     // Stats State: { playerId: { goals: 0, assists: 0 } }
     const [playerStats, setPlayerStats] = useState(match?.stats || {});
 
@@ -35,6 +39,8 @@ const MatchDetail = () => {
             setTeamB(match.teamB || []);
             setTeamAName(match.teamAName || 'Takım A');
             setTeamBName(match.teamBName || 'Takım B');
+            setVideoUrl(match.videoUrl || '');
+            setSummaryUrl(match.summaryUrl || '');
             setPlayerStats(match.stats || {});
             setIsEditing(match.status !== 'played');
         }
@@ -53,23 +59,8 @@ const MatchDetail = () => {
     if (!match || !group) return <div>Maç bulunamadı.</div>;
 
     // Combine all available players and sort alphabetically
-    const currentUserId = currentUser.uid || currentUser.id;
-    const isCurrentUserMember = group.members.includes(currentUserId);
-    const isCurrentUserInDetails = memberDetails.some(m => m.id === currentUserId);
-
-    let effectiveMemberDetails = [...memberDetails];
-
-    // Eğer kullanıcı üye ise ama detaylarda yoksa (fetch gecikmesi veya hata), manuel ekle
-    if (isCurrentUserMember && !isCurrentUserInDetails) {
-        effectiveMemberDetails.push({
-            id: currentUserId,
-            name: currentUser.name || currentUser.displayName || 'Kullanıcı',
-            ...currentUser
-        });
-    }
-
     const allPlayers = [
-        ...effectiveMemberDetails.map(m => ({ id: m.id, name: m.id === currentUserId ? `${m.name} (Sen)` : m.name })),
+        ...memberDetails.map(m => ({ id: m.id, name: m.id === (currentUser.uid || currentUser.id) ? `${m.name} (Sen)` : m.name })),
         ...(group.guestPlayers || [])
     ].sort((a, b) => (a.name || 'Unknown').localeCompare(b.name || 'Unknown', 'tr'));
 
@@ -102,7 +93,7 @@ const MatchDetail = () => {
     };
 
     const handleSave = () => {
-        finishMatch(matchId, parseInt(scoreA), parseInt(scoreB), playerStats, teamA, teamB, teamAName, teamBName);
+        finishMatch(matchId, parseInt(scoreA), parseInt(scoreB), playerStats, teamA, teamB, teamAName, teamBName, videoUrl, summaryUrl);
         setIsEditing(false);
     };
 
@@ -111,11 +102,53 @@ const MatchDetail = () => {
             {/* Scoreboard */}
             <div className="card" style={{ marginBottom: '2rem', textAlign: 'center', padding: '2rem 1rem' }}>
                 <h2 style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{match.venue}</h2>
-                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '2rem' }}>
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                     {new Date(match.date).toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     {' '}
                     {new Date(match.date).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                 </div>
+
+                {/* Media Links Display */}
+                {!isEditing && (videoUrl || summaryUrl) && (
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                        {videoUrl && (
+                            <a href={videoUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Video size={18} /> Maç Videosu <ExternalLink size={14} />
+                            </a>
+                        )}
+                        {summaryUrl && (
+                            <a href={summaryUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <FileText size={18} /> Maç Özeti <ExternalLink size={14} />
+                            </a>
+                        )}
+                    </div>
+                )}
+
+                {/* Media Links Inputs (Editing) */}
+                {isEditing && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: '500px', margin: '0 auto 2rem auto' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Video size={18} color="var(--text-secondary)" />
+                            <input
+                                type="url"
+                                placeholder="Maç Videosu Linki (YouTube vb.)"
+                                value={videoUrl}
+                                onChange={(e) => setVideoUrl(e.target.value)}
+                                style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <FileText size={18} color="var(--text-secondary)" />
+                            <input
+                                type="url"
+                                placeholder="Maç Özeti Linki (Sosyal Halısaha vb.)"
+                                value={summaryUrl}
+                                onChange={(e) => setSummaryUrl(e.target.value)}
+                                style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                            />
+                        </div>
+                    </div>
+                )}
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
                     <div style={{ textAlign: 'center', flex: 1 }}>

@@ -390,7 +390,7 @@ export const DataProvider = ({ children }) => {
         }
     };
 
-    const finishMatch = async (matchId, scoreA, scoreB, playerStats, teamA, teamB, teamAName, teamBName) => {
+    const finishMatch = async (matchId, scoreA, scoreB, playerStats, teamA, teamB, teamAName, teamBName, videoUrl = '', summaryUrl = '') => {
         try {
             const matchRef = doc(db, 'matches', matchId);
             await updateDoc(matchRef, {
@@ -400,7 +400,9 @@ export const DataProvider = ({ children }) => {
                 teamA,
                 teamB,
                 teamAName,
-                teamBName
+                teamBName,
+                videoUrl,
+                summaryUrl
             });
         } catch (error) {
             console.error("Error finishing match:", error);

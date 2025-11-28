@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import InviteMember from '../../components/InviteMember';
-import { Users, Calendar, Plus, Copy, Check, UserPlus, Trophy, Play, Square, Mail, Trash2, Shield, ShieldAlert } from 'lucide-react';
+import { Users, Calendar, Plus, Copy, Check, UserPlus, Trophy, Play, Square, Mail, Trash2, Shield, ShieldAlert, Video, FileText } from 'lucide-react';
 
 const GroupDetail = () => {
     const { groupId } = useParams();
@@ -64,11 +64,11 @@ const GroupDetail = () => {
         ? getAllTimeStats(groupId)
         : getSeasonStats(groupId, selectedSeasonId);
 
-    // Filter matches based on selection
+    // Filter matches based on selection and sort by date (oldest first)
     const displayedMatches = matches.filter(m => {
         if (selectedSeasonId === 'all-time') return true;
         return m.seasonId === selectedSeasonId;
-    });
+    }).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
     const copyCode = () => {
         navigator.clipboard.writeText(group.joinCode);
@@ -282,7 +282,11 @@ const GroupDetail = () => {
                                             {' '}
                                             {new Date(match.date).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                                         </div>
-                                        <div style={{ fontWeight: '600' }}>{match.venue}</div>
+                                        <div style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            {match.venue}
+                                            {match.videoUrl && <Video size={14} color="var(--accent-primary)" />}
+                                            {match.summaryUrl && <FileText size={14} color="var(--accent-secondary)" />}
+                                        </div>
                                         {match.seasonId ? (
                                             <span style={{ fontSize: '0.7rem', background: 'var(--accent-secondary)', padding: '2px 6px', borderRadius: '4px', color: 'white' }}>Sezon Maçı</span>
                                         ) : (
