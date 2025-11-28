@@ -4,6 +4,7 @@ import { useData } from '../../contexts/DataContext';
 import { Trophy, Activity, Calendar } from 'lucide-react';
 import InvitationsList from '../../components/InvitationsList';
 import GroupList from './GroupList';
+import AdSenseBanner from '../../components/AdSenseBanner';
 
 const Overview = () => {
     const { currentUser } = useAuth();
@@ -48,6 +49,7 @@ const Overview = () => {
             </div>
 
             <GroupList groups={myGroups} />
+            <AdSenseBanner />
         </div>
     );
 };

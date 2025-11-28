@@ -4,6 +4,7 @@ import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import InviteMember from '../../components/InviteMember';
 import { Users, Calendar, Plus, Copy, Check, UserPlus, Trophy, Play, Square, Mail, Trash2, Shield, ShieldAlert, Video, FileText } from 'lucide-react';
+import AdSenseBanner from '../../components/AdSenseBanner';
 
 const GroupDetail = () => {
     const { groupId } = useParams();
@@ -64,7 +65,7 @@ const GroupDetail = () => {
         ? getAllTimeStats(groupId)
         : getSeasonStats(groupId, selectedSeasonId);
 
-    // Filter matches based on selection and sort by date (oldest first)
+    // Filter matches based on selection and sort by date (oldest first) using string comparison
     const displayedMatches = matches.filter(m => {
         if (selectedSeasonId === 'all-time') return true;
         return m.seasonId === selectedSeasonId;
@@ -437,6 +438,7 @@ const GroupDetail = () => {
                     </div>
                 </div>
             </div>
+            <AdSenseBanner />
         </div>
     );
 };
