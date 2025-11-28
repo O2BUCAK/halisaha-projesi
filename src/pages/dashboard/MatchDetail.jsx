@@ -21,9 +21,9 @@ const MatchDetail = () => {
     const [teamAName, setTeamAName] = useState(match?.teamAName || 'Takım A');
     const [teamBName, setTeamBName] = useState(match?.teamBName || 'Takım B');
 
-    // Media Links State
+    // Media & Content State
     const [videoUrl, setVideoUrl] = useState(match?.videoUrl || '');
-    const [summaryUrl, setSummaryUrl] = useState(match?.summaryUrl || '');
+    const [matchSummary, setMatchSummary] = useState(match?.matchSummary || '');
 
     // Stats State: { playerId: { goals: 0, assists: 0 } }
     const [playerStats, setPlayerStats] = useState(match?.stats || {});
@@ -40,7 +40,7 @@ const MatchDetail = () => {
             setTeamAName(match.teamAName || 'Takım A');
             setTeamBName(match.teamBName || 'Takım B');
             setVideoUrl(match.videoUrl || '');
-            setSummaryUrl(match.summaryUrl || '');
+            setMatchSummary(match.matchSummary || '');
             setPlayerStats(match.stats || {});
             setIsEditing(match.status !== 'played');
         }
@@ -93,7 +93,7 @@ const MatchDetail = () => {
     };
 
     const handleSave = () => {
-        finishMatch(matchId, parseInt(scoreA), parseInt(scoreB), playerStats, teamA, teamB, teamAName, teamBName, videoUrl, summaryUrl);
+        finishMatch(matchId, parseInt(scoreA), parseInt(scoreB), playerStats, teamA, teamB, teamAName, teamBName, videoUrl, matchSummary);
         setIsEditing(false);
     };
 
@@ -108,45 +108,26 @@ const MatchDetail = () => {
                     {new Date(match.date).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                 </div>
 
-                {/* Media Links Display */}
-                {!isEditing && (videoUrl || summaryUrl) && (
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                        {videoUrl && (
-                            <a href={videoUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <Video size={18} /> Maç Videosu <ExternalLink size={14} />
-                            </a>
-                        )}
-                        {summaryUrl && (
-                            <a href={summaryUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <FileText size={18} /> Maç Özeti <ExternalLink size={14} />
-                            </a>
-                        )}
+                {/* Video Link Display (Only if exists and not editing) */}
+                {!isEditing && videoUrl && (
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
+                        <a href={videoUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Video size={18} /> Maç Videosunu İzle <ExternalLink size={14} />
+                        </a>
                     </div>
                 )}
 
-                {/* Media Links Inputs (Editing) */}
+                {/* Video Link Input (Editing) */}
                 {isEditing && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: '500px', margin: '0 auto 2rem auto' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Video size={18} color="var(--text-secondary)" />
-                            <input
-                                type="url"
-                                placeholder="Maç Videosu Linki (YouTube vb.)"
-                                value={videoUrl}
-                                onChange={(e) => setVideoUrl(e.target.value)}
-                                style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-                            />
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <FileText size={18} color="var(--text-secondary)" />
-                            <input
-                                type="url"
-                                placeholder="Maç Özeti Linki (Sosyal Halısaha vb.)"
-                                value={summaryUrl}
-                                onChange={(e) => setSummaryUrl(e.target.value)}
-                                style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-                            />
-                        </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', maxWidth: '500px', margin: '0 auto 2rem auto' }}>
+                        <Video size={18} color="var(--text-secondary)" />
+                        <input
+                            type="url"
+                            placeholder="Maç Videosu Linki (YouTube vb.)"
+                            value={videoUrl}
+                            onChange={(e) => setVideoUrl(e.target.value)}
+                            style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                        />
                     </div>
                 )}
 
@@ -200,6 +181,38 @@ const MatchDetail = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Match Summary Section */}
+            {(matchSummary || isEditing) && (
+                <div className="card" style={{ marginBottom: '2rem' }}>
+                    <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <FileText size={20} /> Maç Özeti & Değerlendirme
+                    </h3>
+                    {isEditing ? (
+                        <textarea
+                            placeholder="Maç hakkında notlar, değerlendirmeler, önemli anlar..."
+                            value={matchSummary}
+                            onChange={(e) => setMatchSummary(e.target.value)}
+                            style={{
+                                width: '100%',
+                                minHeight: '150px',
+                                padding: '1rem',
+                                borderRadius: 'var(--radius-md)',
+                                border: '1px solid var(--border-color)',
+                                background: 'var(--bg-primary)',
+                                color: 'var(--text-primary)',
+                                resize: 'vertical',
+                                lineHeight: '1.5',
+                                fontFamily: 'inherit'
+                            }}
+                        />
+                    ) : (
+                        <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', color: 'var(--text-secondary)' }}>
+                            {matchSummary}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Squad Selection (Only visible when editing) */}
             {isEditing && (

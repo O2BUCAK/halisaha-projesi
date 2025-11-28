@@ -285,7 +285,7 @@ const GroupDetail = () => {
                                         <div style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                             {match.venue}
                                             {match.videoUrl && <Video size={14} color="var(--accent-primary)" />}
-                                            {match.summaryUrl && <FileText size={14} color="var(--accent-secondary)" />}
+                                            {match.matchSummary && <FileText size={14} color="var(--accent-secondary)" />}
                                         </div>
                                         {match.seasonId ? (
                                             <span style={{ fontSize: '0.7rem', background: 'var(--accent-secondary)', padding: '2px 6px', borderRadius: '4px', color: 'white' }}>Sezon Maçı</span>
