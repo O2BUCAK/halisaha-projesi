@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DataProvider } from './contexts/DataContext';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 
 // Pages (Placeholders for now)
 import Login from './pages/Login';
@@ -40,6 +41,7 @@ function App() {
                 />
               </Routes>
             </main>
+            <Footer />
           </div>
         </Router>
       </DataProvider>

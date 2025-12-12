@@ -59,8 +59,29 @@ const MatchDetail = () => {
     if (!match || !group) return <div>Maç bulunamadı.</div>;
 
     // Combine all available players and sort alphabetically
+    const currentUserId = String(currentUser.uid || currentUser.id);
+    const isCreator = group.createdBy && String(group.createdBy) === currentUserId;
+    const isMember = group.members?.some(m => String(m) === currentUserId);
+
+    // Check if current user is already in the details list
+    const isCurrentUserInDetails = memberDetails.some(m => String(m.id) === currentUserId);
+
+    let effectiveMemberDetails = [...memberDetails];
+
+    // Force add current user if they are creator OR member, and not in details
+    if ((isCreator || isMember) && !isCurrentUserInDetails) {
+        effectiveMemberDetails.push({
+            id: currentUserId,
+            name: currentUser.name || currentUser.displayName || 'Siz',
+            ...currentUser
+        });
+    }
+
     const allPlayers = [
-        ...memberDetails.map(m => ({ id: m.id, name: m.id === (currentUser.uid || currentUser.id) ? `${m.name} (Sen)` : m.name })),
+        ...effectiveMemberDetails.map(m => ({
+            id: m.id,
+            name: String(m.id) === currentUserId ? `${m.name} (Sen)` : m.name
+        })),
         ...(group.guestPlayers || [])
     ].sort((a, b) => (a.name || 'Unknown').localeCompare(b.name || 'Unknown', 'tr'));
 
