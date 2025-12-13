@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { Trophy, Save, Users, UserPlus, Video, FileText, ExternalLink, Hand } from 'lucide-react';
+import { Trophy, Save, Users, UserPlus, Video, FileText, ExternalLink, Hand, Share2 } from 'lucide-react';
 
 import TacticalBoard from '../../components/TacticalBoard';
 
@@ -191,6 +191,17 @@ const MatchDetail = () => {
                     {' '}
                     {new Date(match.date).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                 </div>
+
+                <button
+                    onClick={() => {
+                        navigator.clipboard.writeText(window.location.href);
+                        alert('Maç bağlantısı kopyalandı! Bu linki arkadaşlarınızla paylaşabilirsiniz.');
+                    }}
+                    className="btn btn-secondary"
+                    style={{ margin: '0 auto 1.5rem auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                    <Share2 size={16} /> Paylaş
+                </button>
 
                 {/* Video Link Display (Only if exists and not editing) */}
                 {!isEditing && videoUrl && (

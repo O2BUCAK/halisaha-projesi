@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import InviteMember from '../../components/InviteMember';
-import { Users, Calendar, Plus, Copy, Check, UserPlus, Trophy, Play, Square, Mail, Trash2, Shield, ShieldAlert, Video, FileText, X, Save, Hash } from 'lucide-react';
+import { Users, Calendar, Plus, Copy, Check, UserPlus, Trophy, Play, Square, Mail, Trash2, Shield, ShieldAlert, Video, FileText, X, Save, Hash, Share2 } from 'lucide-react';
 import AdSenseBanner from '../../components/AdSenseBanner';
 
 const GroupDetail = () => {
@@ -230,10 +230,21 @@ const GroupDetail = () => {
                         <div className="flex-center" style={{ gap: '0.5rem', background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
                             <span style={{ color: 'var(--text-secondary)' }}>Katılım Kodu:</span>
                             <code style={{ fontWeight: 'bold', color: 'var(--accent-primary)' }}>{group.joinCode}</code>
-                            <button onClick={copyCode} style={{ marginLeft: '0.5rem', color: copied ? 'var(--accent-success)' : 'var(--text-secondary)' }}>
+                            <button onClick={copyCode} style={{ marginLeft: '0.5rem', color: copied ? 'var(--accent-success)' : 'var(--text-secondary)' }} title="Kopyala">
                                 {copied ? <Check size={16} /> : <Copy size={16} />}
                             </button>
                         </div>
+                        <button
+                            onClick={() => {
+                                navigator.clipboard.writeText(window.location.href);
+                                alert('Grup bağlantısı kopyalandı! Bu linki arkadaşlarınızla paylaşabilirsiniz.');
+                            }}
+                            className="btn btn-secondary"
+                            style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                            title="Paylaş"
+                        >
+                            <Share2 size={18} /> Paylaş
+                        </button>
                         {/* Join Button for Non-Members */}
                         {!isMember && (
                             currentUser ? (
