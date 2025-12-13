@@ -38,14 +38,20 @@ const GroupDetail = () => {
     const isMember = group?.members?.includes(currentUser?.uid || currentUser?.id);
     const isAdmin = group && (group.admins || [group.createdBy]).includes(currentUser?.uid || currentUser?.id);
 
+    const [loading, setLoading] = useState(!contextGroup); // Initial loading if not in context
+
     useEffect(() => {
         // If not found in context (not a member), fetch it
         if (!contextGroup && groupId) {
+            setLoading(true);
             const loadGroup = async () => {
                 const g = await fetchGroup(groupId);
                 setFetchedGroup(g);
+                setLoading(false);
             };
             loadGroup();
+        } else {
+            setLoading(false);
         }
     }, [groupId, contextGroup]);
 
@@ -78,7 +84,8 @@ const GroupDetail = () => {
         setJoinRequests(prev => prev.filter(r => r.id !== req.id));
     };
 
-    if (!group) return <div>Yükleniyor...</div>;
+    if (loading) return <div className="p-4 text-center">Yükleniyor...</div>;
+    if (!group) return <div className="p-4 text-center">Grup bulunamadı veya erişim izniniz yok.</div>;
 
     // Public View Limitation
     if (!isMember && !isAdmin) {

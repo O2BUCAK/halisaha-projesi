@@ -10,15 +10,15 @@ service cloud.firestore {
     
     // Groups collection
     match /groups/{groupId} {
-      // Anyone authenticated can read groups they are a member of
-      allow read: if request.auth != null && 
-                     request.auth.uid in resource.data.members;
+      // Allow anyone to view a specific group (for public link)
+      allow get: if true;
+      // Listing is restricted to members
+      allow list: if request.auth != null && request.auth.uid in resource.data.members;
       
       // Only group creator can create
       allow create: if request.auth != null && 
                        request.auth.uid == request.resource.data.createdBy;
       
-      // Admins or creator can update (fallback to creator for old groups without admins)
       // Admins or creator can update (fallback to creator for old groups without admins)
       // Also allow users to join (add themselves to members)
       allow update: if request.auth != null && 
@@ -36,6 +36,12 @@ service cloud.firestore {
       // Only creator can delete
       allow delete: if request.auth != null && 
                        request.auth.uid == resource.data.createdBy;
+    }
+
+    // Join Requests collection
+    match /joinRequests/{requestId} {
+        allow create: if request.auth != null;
+        allow read, update: if request.auth != null; // Simplified permission for MVP
     }
     
     // Matches collection
