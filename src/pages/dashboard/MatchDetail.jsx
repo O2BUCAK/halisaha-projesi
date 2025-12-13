@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { Trophy, Save, Users, UserPlus, Video, FileText, ExternalLink, Shield } from 'lucide-react';
+import { Trophy, Save, Users, UserPlus, Video, FileText, ExternalLink, Hand } from 'lucide-react';
 
 import TacticalBoard from '../../components/TacticalBoard';
 
@@ -290,7 +290,7 @@ const MatchDetail = () => {
                                 }}>
                                     <span style={{ marginRight: '0.5rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                         {player.name}
-                                        {(inA?.isGoalkeeper || inB?.isGoalkeeper) && <Shield size={14} fill="gold" color="gold" />}
+                                        {(inA?.isGoalkeeper || inB?.isGoalkeeper) && <Hand size={14} fill="gold" color="gold" />}
                                     </span>
                                     <div style={{ display: 'flex', gap: '0.25rem' }}>
                                         <button
@@ -323,17 +323,18 @@ const MatchDetail = () => {
                                                 style={{
                                                     padding: '0.25rem',
                                                     borderRadius: '4px',
-                                                    background: (inA?.isGoalkeeper || inB?.isGoalkeeper) ? '#FFD700' : 'rgba(255,255,255,0.1)',
-                                                    color: (inA?.isGoalkeeper || inB?.isGoalkeeper) ? '#000' : 'var(--text-secondary)',
+                                                    background: (inA?.isGoalkeeper || inB?.isGoalkeeper) ? '#FFD700' : 'rgba(255,255,255,0.2)', // Increased contrast
+                                                    color: (inA?.isGoalkeeper || inB?.isGoalkeeper) ? '#000' : 'var(--text-primary)', // Brighter text when inactive
                                                     border: '1px solid var(--border-color)',
                                                     cursor: 'pointer',
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    justifyContent: 'center'
+                                                    justifyContent: 'center',
+                                                    marginLeft: '4px' // Added margin
                                                 }}
                                                 title="Kaleci Yap"
                                             >
-                                                <Shield size={14} />
+                                                <Hand size={14} />
                                             </button>
                                         )}
                                     </div>

@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Trophy, LogOut, User } from 'lucide-react';
 
+import packageJson from '../../package.json';
+
 const Navbar = () => {
     const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
@@ -24,7 +26,7 @@ const Navbar = () => {
             <div className="container flex-center" style={{ justifyContent: 'space-between' }}>
                 <Link to="/" className="flex-center" style={{ gap: '0.5rem', fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
                     <Trophy size={28} />
-                    <span>HalıSaha <span style={{ fontSize: '0.8rem', background: 'var(--accent-secondary)', color: 'white', padding: '2px 6px', borderRadius: '4px' }}>v2.0</span></span>
+                    <span>HalıSaha <span style={{ fontSize: '0.8rem', background: 'var(--accent-secondary)', color: 'white', padding: '2px 6px', borderRadius: '4px' }}>v{packageJson.version}</span></span>
                 </Link>
 
                 <div className="flex-center" style={{ gap: '1rem' }}>
