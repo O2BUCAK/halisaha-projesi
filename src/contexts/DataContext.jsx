@@ -582,10 +582,12 @@ export const DataProvider = ({ children }) => {
         matchList.forEach(match => {
             const allPlayers = [...(match.teamA || []), ...(match.teamB || [])];
             allPlayers.forEach(player => {
+                if (!player || !player.id) return; // Safety check
+
                 if (!stats[player.id]) {
                     stats[player.id] = {
                         id: player.id,
-                        name: player.name,
+                        name: player.name || 'Bilinmeyen',
                         matches: 0,
                         goals: 0,
                         assists: 0,

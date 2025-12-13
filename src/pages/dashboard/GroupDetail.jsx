@@ -67,6 +67,16 @@ const GroupDetail = () => {
         }
     }, [isAdmin, groupId]);
 
+    useEffect(() => {
+        if (group?.members) {
+            const loadMembers = async () => {
+                const details = await getUsersDetails(group.members);
+                setMemberDetails(details);
+            };
+            loadMembers();
+        }
+    }, [group?.members]);
+
     const handleJoinRequest = async () => {
         setJoinStatus('loading');
         const result = await sendJoinRequest(groupId);
