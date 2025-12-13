@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { Trophy, Save, Users, UserPlus, Video, FileText, ExternalLink, Hand, Share2 } from 'lucide-react';
+import { Trophy, Save, Users, UserPlus, Video, FileText, ExternalLink, Hand, Share2, Star } from 'lucide-react';
 
 import TacticalBoard from '../../components/TacticalBoard';
 
 const MatchDetail = () => {
     const { matchId } = useParams();
-    const { matches, groups, finishMatch, getUsersDetails, updateMatchTeams, fetchMatch, fetchGroup } = useData();
+    const { matches, groups, finishMatch, getUsersDetails, updateMatchTeams, fetchMatch, fetchGroup, givePlayerRating } = useData();
     const { currentUser } = useAuth();
     const contextMatch = matches.find(m => m.id === matchId);
     const contextGroup = contextMatch ? groups.find(g => g.id === contextMatch.groupId) : null;
@@ -97,12 +97,6 @@ const MatchDetail = () => {
     const currentUserId = currentUser ? String(currentUser.uid || currentUser.id) : null;
     const isAdmin = currentUser && (group.admins || [group.createdBy]).includes(currentUserId);
 
-    // Only allow editing if user is admin
-    // Note: Previously editing was allowed if status != played. Now restrict to Admins.
-    // Also update isEditing initial state logic to respect admin status.
-    // But we need to use useEffect for that because `isAdmin` depends on group which might be fetched async.
-    // We'll handle visual hiding primarily.
-
     // Check if current user is already in the details list
     const isCurrentUserInDetails = currentUserId && memberDetails.some(m => String(m.id) === currentUserId);
 
@@ -179,6 +173,37 @@ const MatchDetail = () => {
             alert('Taktik/Pozisyonlar kaydedildi!');
         } else {
             alert('Kaydedilirken hata oluştu.');
+        }
+    };
+
+    // Rating Logic
+    const ratings = match?.ratings || {};
+
+    // Check if current user is a player in the match (Auth user only)
+    const isPlayerInMatch = currentUser && (
+        teamA.some(p => p.id === (currentUser.uid || currentUser.id)) ||
+        teamB.some(p => p.id === (currentUser.uid || currentUser.id))
+    );
+
+    const getPlayerRatingData = (playerId) => {
+        const playerRatings = ratings[playerId] || {};
+        const votes = Object.values(playerRatings);
+        if (votes.length === 0) return { average: '-', count: 0 };
+        const sum = votes.reduce((a, b) => a + b, 0);
+        return { average: (sum / votes.length).toFixed(1), count: votes.length };
+    };
+
+    const getMyVote = (playerId) => {
+        if (!currentUser) return '';
+        const playerRatings = ratings[playerId] || {};
+        return playerRatings[currentUser.uid || currentUser.id] || '';
+    };
+
+    const handleRate = async (playerId, score) => {
+        if (!currentUser) return;
+        const result = await givePlayerRating(matchId, playerId, parseInt(score));
+        if (!result.success) {
+            // alert(result.error);
         }
     };
 
@@ -316,8 +341,6 @@ const MatchDetail = () => {
             </div>
 
             {/* Squad Selection (Only visible when editing) */}
-
-            {/* Squad Selection (Only visible when editing) */}
             {isEditing && (
                 <div className="card" style={{ marginBottom: '2rem' }}>
                     <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -449,6 +472,38 @@ const MatchDetail = () => {
                                         <span style={{ fontWeight: 'bold' }}>{playerStats[player.id]?.saves || 0}</span>
                                     )}
                                 </div>
+                                {/* Rating Column */}
+                                <div style={{ marginLeft: '1rem', minWidth: '80px', textAlign: 'center' }}>
+                                    <label style={{ fontSize: '0.7rem', display: 'block', color: 'var(--text-secondary)' }}>Puan</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                        <span style={{ fontWeight: 'bold', color: 'var(--accent-primary)' }}>
+                                            {getPlayerRatingData(player.id).average}
+                                        </span>
+                                        <Star size={12} fill="var(--accent-primary)" color="var(--accent-primary)" />
+                                        {/* Vote Input */}
+                                        {isPlayerInMatch && player.id !== (currentUser.uid || currentUser.id) && !isEditing && (
+                                            <select
+                                                value={getMyVote(player.id)}
+                                                onChange={(e) => handleRate(player.id, e.target.value)}
+                                                style={{
+                                                    marginLeft: '4px',
+                                                    width: '40px',
+                                                    padding: '2px',
+                                                    fontSize: '0.8rem',
+                                                    borderRadius: '4px',
+                                                    border: '1px solid var(--border-color)',
+                                                    background: 'var(--bg-secondary)',
+                                                    color: 'var(--text-primary)'
+                                                }}
+                                            >
+                                                <option value="">-</option>
+                                                {[...Array(10)].map((_, i) => (
+                                                    <option key={i + 1} value={i + 1}>{i + 1}</option>
+                                                ))}
+                                            </select>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -506,6 +561,38 @@ const MatchDetail = () => {
                                     ) : (
                                         <span style={{ fontWeight: 'bold' }}>{playerStats[player.id]?.saves || 0}</span>
                                     )}
+                                </div>
+                                {/* Rating Column */}
+                                <div style={{ marginLeft: '1rem', minWidth: '80px', textAlign: 'center' }}>
+                                    <label style={{ fontSize: '0.7rem', display: 'block', color: 'var(--text-secondary)' }}>Puan</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                        <span style={{ fontWeight: 'bold', color: 'var(--accent-primary)' }}>
+                                            {getPlayerRatingData(player.id).average}
+                                        </span>
+                                        <Star size={12} fill="var(--accent-primary)" color="var(--accent-primary)" />
+                                        {/* Vote Input */}
+                                        {isPlayerInMatch && player.id !== (currentUser.uid || currentUser.id) && !isEditing && (
+                                            <select
+                                                value={getMyVote(player.id)}
+                                                onChange={(e) => handleRate(player.id, e.target.value)}
+                                                style={{
+                                                    marginLeft: '4px',
+                                                    width: '40px',
+                                                    padding: '2px',
+                                                    fontSize: '0.8rem',
+                                                    borderRadius: '4px',
+                                                    border: '1px solid var(--border-color)',
+                                                    background: 'var(--bg-secondary)',
+                                                    color: 'var(--text-primary)'
+                                                }}
+                                            >
+                                                <option value="">-</option>
+                                                {[...Array(10)].map((_, i) => (
+                                                    <option key={i + 1} value={i + 1}>{i + 1}</option>
+                                                ))}
+                                            </select>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>

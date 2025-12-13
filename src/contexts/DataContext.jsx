@@ -291,6 +291,36 @@ export const DataProvider = ({ children }) => {
         }
     };
 
+    const givePlayerRating = async (matchId, targetPlayerId, score) => {
+        try {
+            if (!currentUser) return { success: false, error: 'Giriş yapmalısınız.' };
+            const voterId = currentUser.uid || currentUser.id;
+
+            if (targetPlayerId === voterId) return { success: false, error: 'Kendinize puan veremezsiniz.' };
+
+            const matchRef = doc(db, 'matches', matchId);
+            const matchSnap = await getDoc(matchRef);
+            if (!matchSnap.exists()) return { success: false, error: 'Maç bulunamadı.' };
+
+            // Allow if match is finished ? Usually ratings are given after match.
+            // But let's allow it anytime for now.
+
+            // Construct update path: ratings.{targetPlayerId}.{voterId}
+            // We use a map: ratings: { targetId: { voterId: score } }
+
+            const updateKey = `ratings.${targetPlayerId}.${voterId}`;
+
+            await updateDoc(matchRef, {
+                [updateKey]: score
+            });
+
+            return { success: true };
+        } catch (error) {
+            console.error("Error giving rating:", error);
+            return { success: false, error: 'Puan verilirken hata oluştu.' };
+        }
+    };
+
 
 
     const removeMember = async (groupId, memberId) => {
@@ -765,6 +795,7 @@ export const DataProvider = ({ children }) => {
         addGuestMember,
         removeGuestMember,
         mergeGuestToUser,
+        givePlayerRating,
         removeMember,
         addAdmin,
         removeAdmin,
