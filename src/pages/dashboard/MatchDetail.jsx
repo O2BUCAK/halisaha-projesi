@@ -4,6 +4,8 @@ import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Trophy, Save, Users, UserPlus, Video, FileText, ExternalLink } from 'lucide-react';
 
+import TacticalBoard from '../../components/TacticalBoard';
+
 const MatchDetail = () => {
     const { matchId } = useParams();
     const { matches, groups, finishMatch, getUsersDetails } = useData();
@@ -116,6 +118,11 @@ const MatchDetail = () => {
     const handleSave = () => {
         finishMatch(matchId, parseInt(scoreA), parseInt(scoreB), playerStats, teamA, teamB, teamAName, teamBName, videoUrl, matchSummary);
         setIsEditing(false);
+    };
+
+    const handleTacticalSave = (newTeamA, newTeamB) => {
+        setTeamA(newTeamA);
+        setTeamB(newTeamB);
     };
 
     return (
@@ -235,6 +242,13 @@ const MatchDetail = () => {
                 </div>
             )}
 
+            {/* Tactical Board */}
+            <div style={{ marginBottom: '2rem' }}>
+                <TacticalBoard match={{ teamA, teamB }} onSave={handleTacticalSave} />
+            </div>
+
+            {/* Squad Selection (Only visible when editing) */}
+
             {/* Squad Selection (Only visible when editing) */}
             {isEditing && (
                 <div className="card" style={{ marginBottom: '2rem' }}>
@@ -327,6 +341,20 @@ const MatchDetail = () => {
                                         <span style={{ fontWeight: 'bold' }}>{playerStats[player.id]?.assists || 0}</span>
                                     )}
                                 </div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <label style={{ fontSize: '0.7rem', display: 'block', color: 'var(--text-secondary)' }}>Kurtarış</label>
+                                    {isEditing ? (
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={playerStats[player.id]?.saves || 0}
+                                            onChange={(e) => handleStatChange(player.id, 'saves', e.target.value)}
+                                            style={{ width: '50px', padding: '0.25rem', textAlign: 'center' }}
+                                        />
+                                    ) : (
+                                        <span style={{ fontWeight: 'bold' }}>{playerStats[player.id]?.saves || 0}</span>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -366,6 +394,20 @@ const MatchDetail = () => {
                                         />
                                     ) : (
                                         <span style={{ fontWeight: 'bold' }}>{playerStats[player.id]?.assists || 0}</span>
+                                    )}
+                                </div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <label style={{ fontSize: '0.7rem', display: 'block', color: 'var(--text-secondary)' }}>Kurtarış</label>
+                                    {isEditing ? (
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={playerStats[player.id]?.saves || 0}
+                                            onChange={(e) => handleStatChange(player.id, 'saves', e.target.value)}
+                                            style={{ width: '50px', padding: '0.25rem', textAlign: 'center' }}
+                                        />
+                                    ) : (
+                                        <span style={{ fontWeight: 'bold' }}>{playerStats[player.id]?.saves || 0}</span>
                                     )}
                                 </div>
                             </div>

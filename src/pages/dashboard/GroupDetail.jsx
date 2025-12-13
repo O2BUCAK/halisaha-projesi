@@ -8,8 +8,19 @@ import AdSenseBanner from '../../components/AdSenseBanner';
 
 const GroupDetail = () => {
     const { groupId } = useParams();
-    const { groups, getGroupMatches, addGuestMember, startSeason, endSeason, getSeasonStats, getAllTimeStats, assignMatchToSeason, removeMember, removeGuestMember, addAdmin, removeAdmin, getUsersDetails } = useData();
+    const {
+        groups, getGroupMatches, addGuestMember, startSeason, endSeason,
+        getSeasonStats, getAllTimeStats, assignMatchToSeason, removeMember,
+        removeGuestMember, addAdmin, removeAdmin, getUsersDetails,
+        fetchGroup, sendJoinRequest, getJoinRequests, respondToJoinRequest
+    } = useData();
     const { currentUser } = useAuth();
+    const [fetchedGroup, setFetchedGroup] = useState(null);
+    const [joinRequests, setJoinRequests] = useState([]);
+    const [requestsLoading, setRequestsLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState('summary'); // summary, matches, members, requests
+    const [statType, setStatType] = useState('players'); // players, goalkeepers
+    const [joinStatus, setJoinStatus] = useState(null); // null, success, error
     const [copied, setCopied] = useState(false);
     const [showAddGuest, setShowAddGuest] = useState(false);
     const [guestName, setGuestName] = useState('');
@@ -19,22 +30,78 @@ const GroupDetail = () => {
     const [showInvite, setShowInvite] = useState(false);
     const [memberDetails, setMemberDetails] = useState([]);
 
-    const group = groups.find(g => g.id === groupId);
-    const matches = getGroupMatches(groupId);
+    // Use group from context if available (member), otherwise use fetched group (public)
+    const contextGroup = groups.find(g => g.id === groupId);
+    const group = contextGroup || fetchedGroup;
+
+    // Determine if user is a member
+    const isMember = group?.members?.includes(currentUser?.uid || currentUser?.id);
+    const isAdmin = group && (group.admins || [group.createdBy]).includes(currentUser?.uid || currentUser?.id);
 
     useEffect(() => {
-        const fetchMembers = async () => {
-            if (group && group.members) {
-                const details = await getUsersDetails(group.members);
-                setMemberDetails(details);
-            }
-        };
-        fetchMembers();
-    }, [group?.members]); // Re-fetch if members change
+        // If not found in context (not a member), fetch it
+        if (!contextGroup && groupId) {
+            const loadGroup = async () => {
+                const g = await fetchGroup(groupId);
+                setFetchedGroup(g);
+            };
+            loadGroup();
+        }
+    }, [groupId, contextGroup]);
 
-    if (!group) return <div>Grup bulunamadı.</div>;
+    useEffect(() => {
+        if (isAdmin) {
+            const loadRequests = async () => {
+                setRequestsLoading(true);
+                const reqs = await getJoinRequests(groupId);
+                setJoinRequests(reqs);
+                setRequestsLoading(false);
+            };
+            loadRequests();
+        }
+    }, [isAdmin, groupId]);
 
-    const isAdmin = (group.admins || [group.createdBy]).includes(currentUser.uid || currentUser.id);
+    const handleJoinRequest = async () => {
+        setJoinStatus('loading');
+        const result = await sendJoinRequest(groupId);
+        if (result.success) {
+            setJoinStatus('success');
+        } else {
+            setJoinStatus('error');
+            alert(result.error);
+        }
+    };
+
+    const handleRequestResponse = async (req, status) => {
+        await respondToJoinRequest(req.id, status, groupId, req.userId);
+        // Refresh list locally
+        setJoinRequests(prev => prev.filter(r => r.id !== req.id));
+    };
+
+    if (!group) return <div>Yükleniyor...</div>;
+
+    // Public View Limitation
+    if (!isMember && !isAdmin) {
+        return (
+            <div className="container layout">
+                <div className="card text-center" style={{ maxWidth: '600px', margin: '2rem auto' }}>
+                    <h2 style={{ marginBottom: '1rem' }}>{group.name}</h2>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Bu grubun detaylarını görmek için üye olmalısınız.</p>
+                    {currentUser ? (
+                        joinStatus === 'success' ? (
+                            <div className="p-4 bg-green-500/20 text-green-500 rounded-lg">Katılma isteği gönderildi.</div>
+                        ) : (
+                            <button onClick={handleJoinRequest} className="btn btn-primary" disabled={joinStatus === 'loading'}>
+                                {joinStatus === 'loading' ? 'Gönderiliyor...' : 'Katılma İsteği Gönder'}
+                            </button>
+                        )
+                    ) : (
+                        <Link to="/login" className="btn btn-primary">Giriş Yap</Link>
+                    )}
+                </div>
+            </div>
+        );
+    }
 
     // Sort members alphabetically
     const sortedMembers = [...memberDetails].sort((a, b) =>
@@ -64,6 +131,17 @@ const GroupDetail = () => {
     const displayedStats = selectedSeasonId === 'all-time'
         ? getAllTimeStats(groupId)
         : getSeasonStats(groupId, selectedSeasonId);
+
+    // Sort logic for displayedStats based on statType
+    const sortedStats = [...displayedStats].sort((a, b) => {
+        if (statType === 'goalkeepers') {
+            // Sort by clean sheets desc, then saves desc
+            if (b.cleanSheets !== a.cleanSheets) return (b.cleanSheets || 0) - (a.cleanSheets || 0);
+            return (b.saves || 0) - (a.saves || 0);
+        }
+        // Default players: Goals desc
+        return b.goals - a.goals;
+    });
 
     // Filter matches based on selection and sort by date (oldest first) using string comparison
     const displayedMatches = matches.filter(m => {
@@ -222,21 +300,61 @@ const GroupDetail = () => {
 
                 {/* Stats Table */}
                 <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
-                    <h4 style={{ fontSize: '1rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
-                        {selectedSeasonId === 'all-time' ? 'Genel İstatistikler (Tüm Zamanlar)' : 'Sezon İstatistikleri'}
-                    </h4>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <h4 style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>
+                            {selectedSeasonId === 'all-time' ? 'Genel İstatistikler (Tüm Zamanlar)' : 'Sezon İstatistikleri'}
+                        </h4>
+                        <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-primary)', padding: '0.25rem', borderRadius: 'var(--radius-sm)' }}>
+                            <button
+                                onClick={() => setStatType('players')}
+                                style={{
+                                    padding: '0.25rem 0.5rem',
+                                    borderRadius: 'var(--radius-sm)',
+                                    border: 'none',
+                                    background: statType === 'players' ? 'var(--accent-primary)' : 'transparent',
+                                    color: statType === 'players' ? 'white' : 'var(--text-secondary)',
+                                    cursor: 'pointer',
+                                    fontSize: '0.8rem'
+                                }}>
+                                Oyuncular
+                            </button>
+                            <button
+                                onClick={() => setStatType('goalkeepers')}
+                                style={{
+                                    padding: '0.25rem 0.5rem',
+                                    borderRadius: 'var(--radius-sm)',
+                                    border: 'none',
+                                    background: statType === 'goalkeepers' ? 'var(--accent-primary)' : 'transparent',
+                                    color: statType === 'goalkeepers' ? 'white' : 'var(--text-secondary)',
+                                    cursor: 'pointer',
+                                    fontSize: '0.8rem'
+                                }}>
+                                Kaleciler
+                            </button>
+                        </div>
+                    </div>
+
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                         <thead>
                             <tr style={{ borderBottom: '1px solid var(--border-color)', textAlign: 'left' }}>
                                 <th style={{ padding: '0.75rem' }}>Oyuncu</th>
                                 <th style={{ padding: '0.75rem', textAlign: 'center' }}>Maç</th>
-                                <th style={{ padding: '0.75rem', textAlign: 'center' }}>Gol</th>
-                                <th style={{ padding: '0.75rem', textAlign: 'center' }}>Asist</th>
+                                {statType === 'players' ? (
+                                    <>
+                                        <th style={{ padding: '0.75rem', textAlign: 'center' }}>Gol</th>
+                                        <th style={{ padding: '0.75rem', textAlign: 'center' }}>Asist</th>
+                                    </>
+                                ) : (
+                                    <>
+                                        <th style={{ padding: '0.75rem', textAlign: 'center' }}>Kurtarış</th>
+                                        <th style={{ padding: '0.75rem', textAlign: 'center' }}>Gol Yememe</th>
+                                    </>
+                                )}
                             </tr>
                         </thead>
                         <tbody>
-                            {displayedStats.length > 0 ? (
-                                displayedStats.map((stat, index) => (
+                            {sortedStats.length > 0 ? (
+                                sortedStats.map((stat, index) => (
                                     <tr key={stat.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                         <td style={{ padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                             <span style={{
@@ -250,8 +368,17 @@ const GroupDetail = () => {
                                             {stat.name}
                                         </td>
                                         <td style={{ padding: '0.75rem', textAlign: 'center' }}>{stat.matches}</td>
-                                        <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: 'bold', color: 'var(--accent-primary)' }}>{stat.goals}</td>
-                                        <td style={{ padding: '0.75rem', textAlign: 'center' }}>{stat.assists}</td>
+                                        {statType === 'players' ? (
+                                            <>
+                                                <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: 'bold', color: 'var(--accent-primary)' }}>{stat.goals}</td>
+                                                <td style={{ padding: '0.75rem', textAlign: 'center' }}>{stat.assists}</td>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: 'bold', color: 'var(--accent-primary)' }}>{stat.saves || 0}</td>
+                                                <td style={{ padding: '0.75rem', textAlign: 'center' }}>{stat.cleanSheets || 0}</td>
+                                            </>
+                                        )}
                                     </tr>
                                 ))
                             ) : (
@@ -438,6 +565,33 @@ const GroupDetail = () => {
                     </div>
                 </div>
             </div>
+
+            {isAdmin && joinRequests.length > 0 && (
+                <div style={{ marginTop: '2rem' }}>
+                    <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <UserPlus size={20} /> Katılma İstekleri
+                    </h3>
+                    <div className="card">
+                        {joinRequests.map(req => (
+                            <div key={req.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+                                <div>
+                                    <div style={{ fontWeight: 'bold' }}>{req.userName}</div>
+                                    <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{req.userEmail}</div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button onClick={() => handleRequestResponse(req, 'approved')} className="btn btn-primary" style={{ padding: '0.25rem 0.75rem', background: 'var(--accent-success)', borderColor: 'var(--accent-success)' }}>
+                                        <Check size={16} /> Onayla
+                                    </button>
+                                    <button onClick={() => handleRequestResponse(req, 'rejected')} className="btn btn-secondary" style={{ padding: '0.25rem 0.75rem', borderColor: 'var(--accent-danger)', color: 'var(--accent-danger)' }}>
+                                        <X size={16} /> Reddet
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <AdSenseBanner />
         </div>
     );
