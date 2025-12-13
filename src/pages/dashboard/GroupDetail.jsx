@@ -646,6 +646,24 @@ const GroupDetail = () => {
                                     M
                                 </div>
                                 <span>{guest.name} (Misafir)</span>
+                                <span style={{ marginLeft: '0.5rem' }}>
+                                    {isEditingJersey ? (
+                                        <input
+                                            type="text"
+                                            value={jerseyMap[guest.id] || ''}
+                                            onChange={(e) => handleJerseyChange(guest.id, e.target.value)}
+                                            placeholder="#"
+                                            style={{ width: '40px', padding: '2px', textAlign: 'center', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    ) : (
+                                        (jerseyMap[guest.id] || group.jerseyNumbers?.[guest.id]) && (
+                                            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', background: 'var(--bg-card)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                                                #{jerseyMap[guest.id] || group.jerseyNumbers?.[guest.id]}
+                                            </span>
+                                        )
+                                    )}
+                                </span>
                                 {isAdmin && (
                                     <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
                                         <button
