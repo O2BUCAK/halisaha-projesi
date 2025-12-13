@@ -10,12 +10,13 @@ const MatchDetail = () => {
     const { matchId } = useParams();
     const { matches, groups, finishMatch, getUsersDetails, updateMatchTeams, fetchMatch, fetchGroup } = useData();
     const { currentUser } = useAuth();
-    const [fetchedMatch, setFetchedMatch] = useState(null);
-    const [fetchedGroup, setFetchedGroup] = useState(null);
-    const [loading, setLoading] = useState(false);
-
     const contextMatch = matches.find(m => m.id === matchId);
     const contextGroup = contextMatch ? groups.find(g => g.id === contextMatch.groupId) : null;
+
+    const [fetchedMatch, setFetchedMatch] = useState(null);
+    const [fetchedGroup, setFetchedGroup] = useState(null);
+    // If we don't have the match in context, we need to load it.
+    const [loading, setLoading] = useState(!contextMatch && !!matchId);
 
     const match = contextMatch || fetchedMatch;
     const group = contextGroup || fetchedGroup;
