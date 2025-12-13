@@ -32,6 +32,7 @@ const GroupDetail = () => {
     const [memberDetails, setMemberDetails] = useState([]);
     const [jerseyMap, setJerseyMap] = useState({});
     const [isEditingJersey, setIsEditingJersey] = useState(false);
+    const [selectedSeasonId, setSelectedSeasonId] = useState('active');
 
     // Use group from context if available (member), otherwise use fetched group (public)
     const contextGroup = groups.find(g => g.id === groupId);
@@ -86,6 +87,14 @@ const GroupDetail = () => {
         }
     }, [group?.members]);
 
+    useEffect(() => {
+        if (group?.activeSeasonId) {
+            setSelectedSeasonId(group.activeSeasonId);
+        } else {
+            setSelectedSeasonId('all-time');
+        }
+    }, [group?.activeSeasonId]);
+
     const handleJoinRequest = async () => {
         setJoinStatus('loading');
         const result = await sendJoinRequest(groupId);
@@ -118,16 +127,6 @@ const GroupDetail = () => {
     const sortedGuests = [...(group.guestPlayers || [])].sort((a, b) =>
         (a.name || '').localeCompare(b.name || '', 'tr')
     );
-
-    const [selectedSeasonId, setSelectedSeasonId] = useState('active');
-
-    useEffect(() => {
-        if (group?.activeSeasonId) {
-            setSelectedSeasonId(group.activeSeasonId);
-        } else {
-            setSelectedSeasonId('all-time');
-        }
-    }, [group?.activeSeasonId]);
 
     const activeSeason = group.activeSeasonId
         ? group.seasons?.find(s => s.id === group.activeSeasonId)
