@@ -263,7 +263,7 @@ const MatchDetail = () => {
 
             {/* Tactical Board */}
             <div style={{ marginBottom: '2rem' }}>
-                <TacticalBoard match={{ teamA, teamB }} onSave={handleTacticalSave} />
+                <TacticalBoard match={{ teamA, teamB }} group={group} onSave={handleTacticalSave} />
             </div>
 
             {/* Squad Selection (Only visible when editing) */}

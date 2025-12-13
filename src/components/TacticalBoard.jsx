@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const TacticalBoard = ({ match, onSave }) => {
+const TacticalBoard = ({ match, group, onSave }) => {
     const [players, setPlayers] = useState([]);
     const [selectedTeam, setSelectedTeam] = useState('teamA');
     const containerRef = useRef(null);
@@ -14,7 +14,8 @@ const TacticalBoard = ({ match, onSave }) => {
             team: 'teamA',
             x: p.x || 20,
             y: p.y || 50,
-            color: p.isGoalkeeper ? '#FFD700' : 'var(--accent-primary)' // Gold for GK
+            color: p.isGoalkeeper ? '#FFD700' : 'var(--accent-primary)', // Gold for GK
+            number: group?.jerseyNumbers?.[p.id] || null
         }));
 
         const teamBPlayers = (match.teamB || []).map(p => ({
@@ -22,7 +23,8 @@ const TacticalBoard = ({ match, onSave }) => {
             team: 'teamB',
             x: p.x || 80,
             y: p.y || 50,
-            color: p.isGoalkeeper ? '#FFD700' : 'var(--accent-secondary)' // Gold for GK
+            color: p.isGoalkeeper ? '#FFD700' : 'var(--accent-secondary)', // Gold for GK
+            number: group?.jerseyNumbers?.[p.id] || null
         }));
 
         setPlayers([...teamAPlayers, ...teamBPlayers]);
@@ -112,7 +114,7 @@ const TacticalBoard = ({ match, onSave }) => {
                             fontWeight: 'bold', color: 'white',
                             fontSize: '0.8rem'
                         }}>
-                            {p.name.charAt(0).toUpperCase()}
+                            {p.number || p.name.charAt(0).toUpperCase()}
                         </div>
                         <span style={{
                             fontSize: '0.7rem', color: 'white',

@@ -590,6 +590,19 @@ export const DataProvider = ({ children }) => {
         }
     };
 
+    const updateGroupJerseyNumbers = async (groupId, jerseyNumbers) => {
+        try {
+            const groupRef = doc(db, 'groups', groupId);
+            await updateDoc(groupRef, {
+                jerseyNumbers
+            });
+            return { success: true };
+        } catch (error) {
+            console.error("Error updating jersey numbers:", error);
+            return { success: false, error: 'Numaralar güncellenemedi.' };
+        }
+    };
+
     const calculateStats = (matchList) => {
         const stats = {};
 
@@ -691,8 +704,10 @@ export const DataProvider = ({ children }) => {
         sendJoinRequest,
         getJoinRequests,
         getJoinRequests,
+        getJoinRequests,
         respondToJoinRequest,
-        updateMatchTeams
+        updateMatchTeams,
+        updateGroupJerseyNumbers
     };
 
     return (

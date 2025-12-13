@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import InviteMember from '../../components/InviteMember';
-import { Users, Calendar, Plus, Copy, Check, UserPlus, Trophy, Play, Square, Mail, Trash2, Shield, ShieldAlert, Video, FileText, X } from 'lucide-react';
+import { Users, Calendar, Plus, Copy, Check, UserPlus, Trophy, Play, Square, Mail, Trash2, Shield, ShieldAlert, Video, FileText, X, Save, Hash } from 'lucide-react';
 import AdSenseBanner from '../../components/AdSenseBanner';
 
 const GroupDetail = () => {
@@ -12,7 +12,8 @@ const GroupDetail = () => {
         groups, getGroupMatches, addGuestMember, startSeason, endSeason,
         getSeasonStats, getAllTimeStats, assignMatchToSeason, removeMember,
         removeGuestMember, addAdmin, removeAdmin, getUsersDetails,
-        fetchGroup, sendJoinRequest, getJoinRequests, respondToJoinRequest
+        fetchGroup, sendJoinRequest, getJoinRequests, respondToJoinRequest,
+        updateGroupJerseyNumbers
     } = useData();
     const { currentUser } = useAuth();
     const [fetchedGroup, setFetchedGroup] = useState(null);
@@ -29,6 +30,8 @@ const GroupDetail = () => {
     const [showStartSeason, setShowStartSeason] = useState(false);
     const [showInvite, setShowInvite] = useState(false);
     const [memberDetails, setMemberDetails] = useState([]);
+    const [jerseyMap, setJerseyMap] = useState({});
+    const [isEditingJersey, setIsEditingJersey] = useState(false);
 
     // Use group from context if available (member), otherwise use fetched group (public)
     const contextGroup = groups.find(g => g.id === groupId);
@@ -66,6 +69,12 @@ const GroupDetail = () => {
             loadRequests();
         }
     }, [isAdmin, groupId]);
+
+    useEffect(() => {
+        if (group) {
+            setJerseyMap(group.jerseyNumbers || {});
+        }
+    }, [group]);
 
     useEffect(() => {
         if (group?.members) {
@@ -221,6 +230,15 @@ const GroupDetail = () => {
                 await addAdmin(groupId, memberId);
             }
         }
+    };
+
+    const handleJerseyChange = (userId, number) => {
+        setJerseyMap(prev => ({ ...prev, [userId]: number }));
+    };
+
+    const saveJerseyNumbers = async () => {
+        await updateGroupJerseyNumbers(groupId, jerseyMap);
+        setIsEditingJersey(false);
     };
 
     return (
@@ -484,14 +502,25 @@ const GroupDetail = () => {
                         <h3 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <Users size={20} /> Üyeler
                         </h3>
-                        <div className="flex gap-2">
-                            <button onClick={() => setShowInvite(!showInvite)} className="btn btn-primary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}>
-                                <Mail size={16} /> Davet Et
-                            </button>
-                            <button onClick={() => setShowAddGuest(!showAddGuest)} className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}>
-                                <UserPlus size={16} /> Misafir Ekle
-                            </button>
-                        </div>
+                        {isAdmin && (
+                            <div className="flex gap-2">
+                                <button onClick={() => setShowInvite(!showInvite)} className="btn btn-primary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}>
+                                    <Mail size={16} /> Davet Et
+                                </button>
+                                <button onClick={() => setShowAddGuest(!showAddGuest)} className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}>
+                                    <UserPlus size={16} /> Misafir Ekle
+                                </button>
+                                {isEditingJersey ? (
+                                    <button onClick={saveJerseyNumbers} className="btn btn-primary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', background: 'var(--accent-success)' }}>
+                                        <Save size={16} /> Kaydet
+                                    </button>
+                                ) : (
+                                    <button onClick={() => setIsEditingJersey(true)} className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}>
+                                        <Hash size={16} /> Forma No
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {showInvite && <InviteMember groupId={groupId} />}
@@ -529,6 +558,22 @@ const GroupDetail = () => {
                                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                             {member.id === currentUser.id ? `${member.name} (Sen)` : member.name}
                                             {isMemberAdmin && <Shield size={14} color="gold" fill="gold" />}
+                                            {/* Jersey Number Display / Edit */}
+                                            {isEditingJersey ? (
+                                                <input
+                                                    type="text"
+                                                    value={jerseyMap[member.id] || ''}
+                                                    onChange={(e) => handleJerseyChange(member.id, e.target.value)}
+                                                    placeholder="#"
+                                                    style={{ width: '40px', padding: '2px', textAlign: 'center', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                                                />
+                                            ) : (
+                                                (jerseyMap[member.id] || group.jerseyNumbers?.[member.id]) && (
+                                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', background: 'var(--bg-card)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                                                        #{jerseyMap[member.id] || group.jerseyNumbers?.[member.id]}
+                                                    </span>
+                                                )
+                                            )}
                                         </span>
                                     </div>
 
