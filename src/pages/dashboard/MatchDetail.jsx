@@ -8,11 +8,42 @@ import TacticalBoard from '../../components/TacticalBoard';
 
 const MatchDetail = () => {
     const { matchId } = useParams();
-    const { matches, groups, finishMatch, getUsersDetails, updateMatchTeams } = useData();
+    const { matches, groups, finishMatch, getUsersDetails, updateMatchTeams, fetchMatch, fetchGroup } = useData();
     const { currentUser } = useAuth();
+    const [fetchedMatch, setFetchedMatch] = useState(null);
+    const [fetchedGroup, setFetchedGroup] = useState(null);
+    const [loading, setLoading] = useState(false);
 
-    const match = matches.find(m => m.id === matchId);
-    const group = match ? groups.find(g => g.id === match.groupId) : null;
+    const contextMatch = matches.find(m => m.id === matchId);
+    const contextGroup = contextMatch ? groups.find(g => g.id === contextMatch.groupId) : null;
+
+    const match = contextMatch || fetchedMatch;
+    const group = contextGroup || fetchedGroup;
+
+    // Fetch match/group data if not in context
+    useEffect(() => {
+        if (!contextMatch && matchId) {
+            setLoading(true);
+            const loadData = async () => {
+                // 1. Fetch Match
+                const m = await fetchMatch(matchId);
+                if (m) {
+                    setFetchedMatch(m);
+                    // 2. Fetch Group if not in context
+                    // Try to find group in context first (unlikely if match wasn't there, but possible if subscription was slow)
+                    const gInContext = groups.find(g => g.id === m.groupId);
+                    if (gInContext) {
+                        setFetchedGroup(gInContext); // Should ideally rely on contextGroup logic, but this is safe
+                    } else {
+                        const g = await fetchGroup(m.groupId);
+                        setFetchedGroup(g);
+                    }
+                }
+                setLoading(false);
+            };
+            loadData();
+        }
+    }, [matchId, contextMatch]);
 
     const [scoreA, setScoreA] = useState(match?.score?.a || 0);
     const [scoreB, setScoreB] = useState(match?.score?.b || 0);
@@ -58,20 +89,26 @@ const MatchDetail = () => {
         fetchMembers();
     }, [group?.members]);
 
+    if (loading) return <div>Yükleniyor...</div>;
     if (!match || !group) return <div>Maç bulunamadı.</div>;
 
     // Combine all available players and sort alphabetically
-    const currentUserId = String(currentUser.uid || currentUser.id);
-    const isCreator = group.createdBy && String(group.createdBy) === currentUserId;
-    const isMember = group.members?.some(m => String(m) === currentUserId);
+    const currentUserId = currentUser ? String(currentUser.uid || currentUser.id) : null;
+    const isAdmin = currentUser && (group.admins || [group.createdBy]).includes(currentUserId);
+
+    // Only allow editing if user is admin
+    // Note: Previously editing was allowed if status != played. Now restrict to Admins.
+    // Also update isEditing initial state logic to respect admin status.
+    // But we need to use useEffect for that because `isAdmin` depends on group which might be fetched async.
+    // We'll handle visual hiding primarily.
 
     // Check if current user is already in the details list
-    const isCurrentUserInDetails = memberDetails.some(m => String(m.id) === currentUserId);
+    const isCurrentUserInDetails = currentUserId && memberDetails.some(m => String(m.id) === currentUserId);
 
     let effectiveMemberDetails = [...memberDetails];
 
     // Force add current user if they are creator OR member, and not in details
-    if ((isCreator || isMember) && !isCurrentUserInDetails) {
+    if (currentUser && !isCurrentUserInDetails && group.members?.includes(currentUserId)) {
         effectiveMemberDetails.push({
             id: currentUserId,
             name: currentUser.name || currentUser.displayName || 'Siz',
@@ -263,7 +300,7 @@ const MatchDetail = () => {
 
             {/* Tactical Board */}
             <div style={{ marginBottom: '2rem' }}>
-                <TacticalBoard match={{ teamA, teamB }} group={group} onSave={handleTacticalSave} />
+                <TacticalBoard match={{ teamA, teamB }} group={group} onSave={isAdmin ? handleTacticalSave : undefined} readOnly={!isAdmin} />
             </div>
 
             {/* Squad Selection (Only visible when editing) */}
@@ -471,11 +508,13 @@ const MatchDetail = () => {
                     </button>
                 </div>
             ) : (
-                <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-                    <button onClick={() => setIsEditing(true)} className="btn btn-secondary" style={{ padding: '1rem 3rem', fontSize: '1.1rem' }}>
-                        Düzenle / İstatistik Gir
-                    </button>
-                </div>
+                isAdmin && (
+                    <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+                        <button onClick={() => setIsEditing(true)} className="btn btn-secondary" style={{ padding: '1rem 3rem', fontSize: '1.1rem' }}>
+                            Düzenle / İstatistik Gir
+                        </button>
+                    </div>
+                )
             )}
         </div>
     );

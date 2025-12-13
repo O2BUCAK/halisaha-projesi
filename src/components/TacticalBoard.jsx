@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const TacticalBoard = ({ match, group, onSave }) => {
+const TacticalBoard = ({ match, group, onSave, readOnly = false }) => {
     const [players, setPlayers] = useState([]);
     const [selectedTeam, setSelectedTeam] = useState('teamA');
     const containerRef = useRef(null);
@@ -31,10 +31,12 @@ const TacticalBoard = ({ match, group, onSave }) => {
     }, [match]);
 
     const handleDragStart = (e, playerId) => {
+        if (readOnly) return;
         e.dataTransfer.setData('text/plain', playerId);
     };
 
     const handleDrop = (e) => {
+        if (readOnly) return;
         e.preventDefault();
         const playerId = e.dataTransfer.getData('text/plain');
         const container = containerRef.current.getBoundingClientRect();
@@ -48,6 +50,7 @@ const TacticalBoard = ({ match, group, onSave }) => {
     };
 
     const handleDragOver = (e) => {
+        if (readOnly) return;
         e.preventDefault();
     };
 
@@ -62,7 +65,7 @@ const TacticalBoard = ({ match, group, onSave }) => {
         <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h3>Taktik Tahtası</h3>
-                <button onClick={handleSave} className="btn btn-primary">Kaydet</button>
+                {!readOnly && <button onClick={handleSave} className="btn btn-primary">Kaydet</button>}
             </div>
 
             <div
@@ -98,7 +101,7 @@ const TacticalBoard = ({ match, group, onSave }) => {
                             left: `${p.x}%`,
                             top: `${p.y}%`,
                             transform: 'translate(-50%, -50%)',
-                            cursor: 'move',
+                            cursor: readOnly ? 'default' : 'move',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
@@ -130,7 +133,7 @@ const TacticalBoard = ({ match, group, onSave }) => {
                 ))}
             </div>
             <div style={{ marginTop: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                Oyuncuları sürükleyip bırakarak pozisyonlarını ayarlayın.
+                {readOnly ? 'Yalnızca yönetici pozisyonları değiştirebilir.' : 'Oyuncuları sürükleyip bırakarak pozisyonlarını ayarlayın.'}
             </div>
         </div>
     );

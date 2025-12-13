@@ -12,8 +12,10 @@ service cloud.firestore {
     match /groups/{groupId} {
       // Allow anyone to view a specific group (for public link)
       allow get: if true;
-      // Listing is restricted to members
-      allow list: if request.auth != null && request.auth.uid in resource.data.members;
+      // Allow public list access (needed for searching by code, but we might want to restrict full list? 
+      // For now, allow list if true to support guest view of group lists if needed, 
+      // but primarily for 'get'. Actually, 'list' is needed for queries.
+      allow list: if true;
       
       // Only group creator can create
       allow create: if request.auth != null && 
@@ -46,8 +48,8 @@ service cloud.firestore {
     
     // Matches collection
     match /matches/{matchId} {
-      // Users can read matches from groups they're in
-      allow read: if request.auth != null;
+      // Allow public read access to matches
+      allow read: if true;
       
       // Authenticated users can create matches (we'll verify group membership)
       // Update/delete only by authenticated users

@@ -291,6 +291,19 @@ export const DataProvider = ({ children }) => {
         }
     };
 
+    const fetchMatch = async (matchId) => {
+        try {
+            const matchDoc = await getDoc(doc(db, 'matches', matchId));
+            if (matchDoc.exists()) {
+                return { id: matchDoc.id, ...matchDoc.data() };
+            }
+            return null;
+        } catch (error) {
+            console.error("Error fetching match:", error);
+            return null;
+        }
+    };
+
     const sendInvitation = async (groupId, email, guestId = null) => {
         if (!currentUser) return { success: false, error: 'Not logged in' };
 
@@ -701,9 +714,8 @@ export const DataProvider = ({ children }) => {
         getMyGroups,
         getGroupMatches,
         fetchGroup,
+        fetchMatch,
         sendJoinRequest,
-        getJoinRequests,
-        getJoinRequests,
         getJoinRequests,
         respondToJoinRequest,
         updateMatchTeams,

@@ -106,28 +106,8 @@ const GroupDetail = () => {
     if (loading) return <div className="p-4 text-center">Yükleniyor...</div>;
     if (!group) return <div className="p-4 text-center">Grup bulunamadı veya erişim izniniz yok.</div>;
 
-    // Public View Limitation
-    if (!isMember && !isAdmin) {
-        return (
-            <div className="container layout">
-                <div className="card text-center" style={{ maxWidth: '600px', margin: '2rem auto' }}>
-                    <h2 style={{ marginBottom: '1rem' }}>{group.name}</h2>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Bu grubun detaylarını görmek için üye olmalısınız.</p>
-                    {currentUser ? (
-                        joinStatus === 'success' ? (
-                            <div className="p-4 bg-green-500/20 text-green-500 rounded-lg">Katılma isteği gönderildi.</div>
-                        ) : (
-                            <button onClick={handleJoinRequest} className="btn btn-primary" disabled={joinStatus === 'loading'}>
-                                {joinStatus === 'loading' ? 'Gönderiliyor...' : 'Katılma İsteği Gönder'}
-                            </button>
-                        )
-                    ) : (
-                        <Link to="/login" className="btn btn-primary">Giriş Yap</Link>
-                    )}
-                </div>
-            </div>
-        );
-    }
+    // Remove blocking view for non-members
+    // if (!isMember && !isAdmin) { ... }
 
     // Sort members alphabetically
     const sortedMembers = [...memberDetails].sort((a, b) =>
@@ -255,11 +235,27 @@ const GroupDetail = () => {
                                 {copied ? <Check size={16} /> : <Copy size={16} />}
                             </button>
                         </div>
+                        {/* Join Button for Non-Members */}
+                        {!isMember && (
+                            currentUser ? (
+                                joinStatus === 'success' ? (
+                                    <div className="text-green-500 text-sm font-bold">İstek Gönderildi</div>
+                                ) : (
+                                    <button onClick={handleJoinRequest} className="btn btn-primary" disabled={joinStatus === 'loading'} style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}>
+                                        {joinStatus === 'loading' ? '...' : 'Gruba Katıl'}
+                                    </button>
+                                )
+                            ) : (
+                                <Link to="/login" className="btn btn-primary" style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}>Gruba Katıl</Link>
+                            )
+                        )}
                     </div>
                 </div>
-                <Link to={`/dashboard/groups/${groupId}/matches/create`} className="btn btn-primary">
-                    <Plus size={18} /> Maç Oluştur
-                </Link>
+                {isMember && (
+                    <Link to={`/dashboard/groups/${groupId}/matches/create`} className="btn btn-primary">
+                        <Plus size={18} /> Maç Oluştur
+                    </Link>
+                )}
             </div>
 
             {/* Season Section */}
@@ -556,7 +552,7 @@ const GroupDetail = () => {
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            {member.id === currentUser.id ? `${member.name} (Sen)` : member.name}
+                                            {currentUser && member.id === currentUser.id ? `${member.name} (Sen)` : member.name}
                                             {isMemberAdmin && <Shield size={14} color="gold" fill="gold" />}
                                             {/* Jersey Number Display / Edit */}
                                             {isEditingJersey ? (
@@ -579,7 +575,7 @@ const GroupDetail = () => {
 
                                     {isAdmin && (
                                         <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
-                                            {member.id !== currentUser.id && (
+                                            {currentUser && member.id !== currentUser.id && (
                                                 <button
                                                     onClick={() => handleToggleAdmin(member.id, isMemberAdmin)}
                                                     style={{ background: 'none', border: 'none', color: isMemberAdmin ? 'gold' : 'var(--text-secondary)', cursor: 'pointer' }}
