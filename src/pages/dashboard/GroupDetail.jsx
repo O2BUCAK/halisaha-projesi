@@ -161,7 +161,7 @@ const GroupDetail = () => {
     });
 
     // Filter matches based on selection and sort by date (oldest first) using string comparison
-    const displayedMatches = matches.filter(m => {
+    const displayedMatches = getGroupMatches(groupId).filter(m => {
         if (selectedSeasonId === 'all-time') return true;
         return m.seasonId === selectedSeasonId;
     }).sort((a, b) => (a.date || '').localeCompare(b.date || ''));

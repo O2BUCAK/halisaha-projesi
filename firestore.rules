@@ -59,10 +59,10 @@ service cloud.firestore {
     
     // Invitations collection
     match /invitations/{invitationId} {
-      // Users can read invitations sent to them
+      // Users can read invitations sent to them or created by them
       allow read: if request.auth != null && 
-                     (request.auth.email == resource.data.inviteeEmail || 
-                      request.auth.uid == resource.data.inviterId);
+                     (request.auth.token.email == resource.data.email || 
+                      request.auth.uid == resource.data.invitedBy);
       
       // Group admins can create invitations
       allow create: if request.auth != null && 
@@ -73,12 +73,12 @@ service cloud.firestore {
       
       // Invitee can update (accept/reject)
       allow update: if request.auth != null && 
-                       request.auth.email == resource.data.inviteeEmail;
+                       request.auth.token.email == resource.data.email;
       
       // Creator or invitee can delete
       allow delete: if request.auth != null && 
-                       (request.auth.uid == resource.data.inviterId || 
-                        request.auth.email == resource.data.inviteeEmail);
+                       (request.auth.uid == resource.data.invitedBy || 
+                        request.auth.token.email == resource.data.email);
     }
   }
 }
