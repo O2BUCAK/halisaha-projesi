@@ -619,7 +619,7 @@ export const DataProvider = ({ children }) => {
         }
     };
 
-    const finishMatch = async (matchId, scoreA, scoreB, playerStats, teamA, teamB, teamAName, teamBName, videoUrl = '', matchSummary = '') => {
+    const finishMatch = async (matchId, scoreA, scoreB, playerStats, teamA, teamB, teamAName, teamBName, videoUrls = [], matchSummary = '') => {
         try {
             const matchRef = doc(db, 'matches', matchId);
             await updateDoc(matchRef, {
@@ -630,7 +630,7 @@ export const DataProvider = ({ children }) => {
                 teamB,
                 teamAName,
                 teamBName,
-                videoUrl,
+                videoUrls,
                 matchSummary
             });
         } catch (error) {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { Trophy, Save, Users, UserPlus, Video, FileText, ExternalLink, Hand, Share2, Star } from 'lucide-react';
+import { Trophy, Save, Users, UserPlus, Video, FileText, ExternalLink, Hand, Share2, Star, Trash2, Plus } from 'lucide-react';
 
 import TacticalBoard from '../../components/TacticalBoard';
 
@@ -56,7 +56,7 @@ const MatchDetail = () => {
     const [teamBName, setTeamBName] = useState(match?.teamBName || 'Takım B');
 
     // Media & Content State
-    const [videoUrl, setVideoUrl] = useState(match?.videoUrl || '');
+    const [videoUrls, setVideoUrls] = useState(match?.videoUrls || (match?.videoUrl ? [match.videoUrl] : []));
     const [matchSummary, setMatchSummary] = useState(match?.matchSummary || '');
 
     // Stats State: { playerId: { goals: 0, assists: 0 } }
@@ -73,7 +73,7 @@ const MatchDetail = () => {
             setTeamB(match.teamB || []);
             setTeamAName(match.teamAName || 'Takım A');
             setTeamBName(match.teamBName || 'Takım B');
-            setVideoUrl(match.videoUrl || '');
+            setVideoUrls(match.videoUrls || (match.videoUrl ? [match.videoUrl] : []));
             setMatchSummary(match.matchSummary || '');
             setPlayerStats(match.stats || {});
             setIsEditing(match.status !== 'played');
@@ -160,7 +160,7 @@ const MatchDetail = () => {
     };
 
     const handleSave = () => {
-        finishMatch(matchId, parseInt(scoreA), parseInt(scoreB), playerStats, teamA, teamB, teamAName, teamBName, videoUrl, matchSummary);
+        finishMatch(matchId, parseInt(scoreA), parseInt(scoreB), playerStats, teamA, teamB, teamAName, teamBName, videoUrls.filter(url => url.trim() !== ''), matchSummary);
         setIsEditing(false);
     };
 
@@ -230,25 +230,52 @@ const MatchDetail = () => {
                 </button>
 
                 {/* Video Link Display (Only if exists and not editing) */}
-                {!isEditing && videoUrl && (
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
-                        <a href={videoUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Video size={18} /> Maç Videosunu İzle <ExternalLink size={14} />
-                        </a>
+                {!isEditing && videoUrls.length > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+                        {videoUrls.map((url, index) => (
+                            <a key={index} href={url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Video size={18} /> {videoUrls.length > 1 ? `${index + 1}. Maç Videosunu İzle` : 'Maç Videosunu İzle'} <ExternalLink size={14} />
+                            </a>
+                        ))}
                     </div>
                 )}
 
-                {/* Video Link Input (Editing) */}
+                {/* Video Links Input (Editing) */}
                 {isEditing && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', maxWidth: '500px', margin: '0 auto 2rem auto' }}>
-                        <Video size={18} color="var(--text-secondary)" />
-                        <input
-                            type="url"
-                            placeholder="Maç Videosu Linki (YouTube vb.)"
-                            value={videoUrl}
-                            onChange={(e) => setVideoUrl(e.target.value)}
-                            style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-                        />
+                    <div style={{ maxWidth: '500px', margin: '0 auto 2rem auto' }}>
+                        {videoUrls.map((url, index) => (
+                            <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                <Video size={18} color="var(--text-secondary)" />
+                                <input
+                                    type="url"
+                                    placeholder={`Maç Videosu Linki #${index + 1}`}
+                                    value={url}
+                                    onChange={(e) => {
+                                        const newUrls = [...videoUrls];
+                                        newUrls[index] = e.target.value;
+                                        setVideoUrls(newUrls);
+                                    }}
+                                    style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                                />
+                                <button
+                                    onClick={() => {
+                                        const newUrls = videoUrls.filter((_, i) => i !== index);
+                                        setVideoUrls(newUrls);
+                                    }}
+                                    style={{ color: 'var(--accent-secondary)' }}
+                                    title="Sil"
+                                >
+                                    <Trash2 size={18} />
+                                </button>
+                            </div>
+                        ))}
+                        <button
+                            onClick={() => setVideoUrls([...videoUrls, ''])}
+                            className="btn btn-secondary"
+                            style={{ width: '100%', fontSize: '0.9rem', marginTop: '0.5rem' }}
+                        >
+                            <Plus size={16} /> Başka Video Linki Ekle
+                        </button>
                     </div>
                 )}
 
