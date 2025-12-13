@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { Trophy, Save, Users, UserPlus, Video, FileText, ExternalLink, Hand, Share2, Star, Trash2, Plus } from 'lucide-react';
+import { Trophy, Save, Users, UserPlus, Video, FileText, ExternalLink, Hand, Share2, Star, Trash2, Plus, ArrowLeft } from 'lucide-react';
 
 import TacticalBoard from '../../components/TacticalBoard';
 
@@ -209,6 +209,11 @@ const MatchDetail = () => {
 
     return (
         <div className="container" style={{ maxWidth: '1000px' }}>
+            <div style={{ marginBottom: '1rem' }}>
+                <Link to={`/dashboard/groups/${group?.id}`} className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem' }}>
+                    <ArrowLeft size={16} /> Gruba Dön
+                </Link>
+            </div>
             {/* Scoreboard */}
             <div className="card" style={{ marginBottom: '2rem', textAlign: 'center', padding: '2rem 1rem' }}>
                 <h2 style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{match.venue}</h2>
