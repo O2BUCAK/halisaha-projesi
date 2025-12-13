@@ -250,10 +250,10 @@ const GroupDetail = () => {
     return (
         <div>
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '2rem' }}>
+            <div className="responsive-header">
                 <div>
                     <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{group.name}</h2>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div className="responsive-header-content">
                         <div className="flex-center" style={{ gap: '0.5rem', background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
                             <span style={{ color: 'var(--text-secondary)' }}>Katılım Kodu:</span>
                             <code style={{ fontWeight: 'bold', color: 'var(--accent-primary)' }}>{group.joinCode}</code>
@@ -461,7 +461,7 @@ const GroupDetail = () => {
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
+            <div className="responsive-grid-2-1">
                 {/* Matches Section */}
                 <div>
                     <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

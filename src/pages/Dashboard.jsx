@@ -22,10 +22,10 @@ const Dashboard = () => {
 
     return (
         <div className="container">
-            <div style={{ display: 'flex', gap: '2rem', padding: '2rem 0' }}>
+            <div className="dashboard-layout">
                 {/* Sidebar / Menu */}
                 {currentUser && (
-                    <aside style={{ width: '250px', flexShrink: 0 }}>
+                    <aside className="dashboard-sidebar">
                         <div className="card" style={{ padding: '1rem' }}>
                             <h3 style={{ marginBottom: '1rem', paddingLeft: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.875rem', textTransform: 'uppercase' }}>Menu</h3>
                             <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -44,7 +44,7 @@ const Dashboard = () => {
                 )}
 
                 {/* Main Content Area */}
-                <div style={{ flex: 1 }}>
+                <div className="dashboard-content">
                     <Routes>
                         <Route path="/" element={<PrivateRoute><Overview /></PrivateRoute>} />
                         <Route path="/groups" element={<PrivateRoute><GroupList /></PrivateRoute>} />
