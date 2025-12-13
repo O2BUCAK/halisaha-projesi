@@ -355,7 +355,7 @@ const MatchDetail = () => {
                         <div key={player.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 {player.name}
-                                {player.isGoalkeeper && <Shield size={14} fill="gold" color="gold" />}
+                                {player.isGoalkeeper && <Hand size={14} fill="gold" color="gold" />}
                             </span>
                             <div style={{ display: 'flex', gap: '1rem' }}>
                                 <div style={{ textAlign: 'center' }}>
@@ -413,7 +413,7 @@ const MatchDetail = () => {
                         <div key={player.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 {player.name}
-                                {player.isGoalkeeper && <Shield size={14} fill="gold" color="gold" />}
+                                {player.isGoalkeeper && <Hand size={14} fill="gold" color="gold" />}
                             </span>
                             <div style={{ display: 'flex', gap: '1rem' }}>
                                 <div style={{ textAlign: 'center' }}>
