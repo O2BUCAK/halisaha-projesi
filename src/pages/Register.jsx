@@ -6,6 +6,7 @@ import { User, Mail, Lock, AlertCircle, Chrome, CheckCircle } from 'lucide-react
 const Register = () => {
     const [step, setStep] = useState('register'); // 'register' | 'verify'
     const [name, setName] = useState('');
+    const [nickname, setNickname] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [verificationCode, setVerificationCode] = useState('');
@@ -38,7 +39,7 @@ const Register = () => {
             return;
         }
 
-        const result = await register(name, email, password);
+        const result = await register(name, nickname, email, password);
         if (result.success) {
             if (result.requiresVerification) {
                 setStep('verify');
@@ -167,6 +168,20 @@ const Register = () => {
                                 onChange={(e) => setName(e.target.value)}
                                 required
                                 placeholder="Adınız Soyadınız"
+                                style={{ paddingLeft: '3rem' }}
+                            />
+                        </div>
+                    </div>
+
+                    <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Kullanıcı Adı (Nick)</label>
+                        <div style={{ position: 'relative' }}>
+                            <User size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                            <input
+                                type="text"
+                                value={nickname}
+                                onChange={(e) => setNickname(e.target.value)}
+                                placeholder="Örn: Messi10 (İsteğe Bağlı)"
                                 style={{ paddingLeft: '3rem' }}
                             />
                         </div>

@@ -7,6 +7,7 @@ const Profile = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
         name: currentUser?.name || '',
+        nickname: currentUser?.nickname || '',
         bio: currentUser?.bio || '',
         socialLinks: {
             instagram: currentUser?.socialLinks?.instagram || '',
@@ -107,6 +108,21 @@ const Profile = () => {
                                 </div>
 
                                 <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Kullanıcı Adı (Nick)</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <User size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                                        <input
+                                            type="text"
+                                            name="nickname"
+                                            value={formData.nickname}
+                                            onChange={handleChange}
+                                            style={{ paddingLeft: '3rem' }}
+                                            placeholder="Görünen Adınız"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Biyografi</label>
                                     <textarea
                                         name="bio"
@@ -190,7 +206,10 @@ const Profile = () => {
                                 }}>
                                     {currentUser.name.charAt(0).toUpperCase()}
                                 </div>
-                                <h3 style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{currentUser.name}</h3>
+                                <h3 style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{currentUser.nickname || currentUser.name}</h3>
+                                <div style={{ fontSize: '1rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                                    {currentUser.name}
+                                </div>
                                 <div style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <Mail size={16} /> {currentUser.email}
                                 </div>

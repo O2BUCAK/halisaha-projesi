@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import InviteMember from '../../components/InviteMember';
-import { Users, Calendar, Plus, Copy, Check, UserPlus, Trophy, Play, Square, Mail, Trash2, Shield, ShieldAlert, Video, FileText, X, Save, Hash, Share2 } from 'lucide-react';
+import { Users, Calendar, Plus, Copy, Check, UserPlus, Trophy, Play, Square, Mail, Trash2, Shield, ShieldAlert, Video, FileText, X, Save, Hash, Share2, Link2 } from 'lucide-react';
 import AdSenseBanner from '../../components/AdSenseBanner';
 
 const GroupDetail = () => {
@@ -13,7 +13,7 @@ const GroupDetail = () => {
         getSeasonStats, getAllTimeStats, assignMatchToSeason, removeMember,
         removeGuestMember, addAdmin, removeAdmin, getUsersDetails,
         fetchGroup, sendJoinRequest, getJoinRequests, respondToJoinRequest,
-        updateGroupJerseyNumbers
+        updateGroupJerseyNumbers, mergeGuestToUser
     } = useData();
     const { currentUser } = useAuth();
     const [fetchedGroup, setFetchedGroup] = useState(null);
@@ -32,6 +32,11 @@ const GroupDetail = () => {
     const [memberDetails, setMemberDetails] = useState([]);
     const [jerseyMap, setJerseyMap] = useState({});
     const [isEditingJersey, setIsEditingJersey] = useState(false);
+
+    // Guest Merge State
+    const [showMergeModal, setShowMergeModal] = useState(false);
+    const [selectedGuestForMerge, setSelectedGuestForMerge] = useState(null);
+    const [selectedMemberForMerge, setSelectedMemberForMerge] = useState('');
     const [selectedSeasonId, setSelectedSeasonId] = useState('active');
 
     // Use group from context if available (member), otherwise use fetched group (public)
@@ -218,6 +223,28 @@ const GroupDetail = () => {
     const saveJerseyNumbers = async () => {
         await updateGroupJerseyNumbers(groupId, jerseyMap);
         setIsEditingJersey(false);
+    };
+
+    const handleOpenMergeModal = (guest) => {
+        setSelectedGuestForMerge(guest);
+        setShowMergeModal(true);
+        setSelectedMemberForMerge('');
+    };
+
+    const handleMergeGuest = async () => {
+        if (!selectedGuestForMerge || !selectedMemberForMerge) return;
+
+        if (window.confirm(`${selectedGuestForMerge.name} adlı misafir oyuncuyu, seçilen üyeyle eşleştirmek istiyor musunuz? Bu işlem geri alınamaz ve tüm geçmiş istatistikler aktarılacaktır.`)) {
+            const result = await mergeGuestToUser(groupId, selectedGuestForMerge.id, selectedMemberForMerge);
+            if (result.success) {
+                alert('Eşleştirme başarılı!');
+                setShowMergeModal(false);
+                setSelectedGuestForMerge(null);
+                // Refresh happens automatically via Snapshot
+            } else {
+                alert(result.error);
+            }
+        }
     };
 
     return (
@@ -620,13 +647,22 @@ const GroupDetail = () => {
                                 </div>
                                 <span>{guest.name} (Misafir)</span>
                                 {isAdmin && (
-                                    <button
-                                        onClick={() => handleRemoveGuest(guest.id)}
-                                        style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
-                                        title="Misafiri Sil"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                    <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
+                                        <button
+                                            onClick={() => handleOpenMergeModal(guest)}
+                                            style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer' }}
+                                            title="Üyeyle Eşleştir"
+                                        >
+                                            <Link2 size={16} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleRemoveGuest(guest.id)}
+                                            style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                                            title="Misafiri Sil"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         ))}
@@ -656,6 +692,40 @@ const GroupDetail = () => {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Merge Modal */}
+            {showMergeModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div className="card" style={{ width: '100%', maxWidth: '500px', margin: '1rem' }}>
+                        <h3 style={{ marginBottom: '1rem' }}>Misafiri Üyeyle Eşleştir</h3>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                            <strong>{selectedGuestForMerge?.name}</strong> adlı misafir oyuncunun tüm istatistiklerini aşağıdaki üyeye aktar:
+                        </p>
+
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Üye Seçin</label>
+                            <select
+                                value={selectedMemberForMerge}
+                                onChange={(e) => setSelectedMemberForMerge(e.target.value)}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+                            >
+                                <option value="">Bir üye seçin...</option>
+                                {memberDetails.map(m => (
+                                    <option key={m.id} value={m.id}>{m.nickname || m.name} ({m.email})</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                            <button onClick={() => setShowMergeModal(false)} className="btn btn-secondary">İptal</button>
+                            <button onClick={handleMergeGuest} className="btn btn-primary" disabled={!selectedMemberForMerge}>Eşleştir</button>
+                        </div>
                     </div>
                 </div>
             )}

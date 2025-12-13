@@ -224,6 +224,73 @@ export const DataProvider = ({ children }) => {
         }
     };
 
+    const mergeGuestToUser = async (groupId, guestId, targetUserId) => {
+        try {
+            // 1. Get User Details to get the new name
+            const userDoc = await getDoc(doc(db, 'users', targetUserId));
+            if (!userDoc.exists()) return { success: false, error: 'Kullanıcı bulunamadı.' };
+            const userData = userDoc.data();
+            const newName = userData.nickname || userData.name;
+
+            // 2. Fetch Group to remove guest
+            const groupRef = doc(db, 'groups', groupId);
+            const groupSnap = await getDoc(groupRef);
+            if (!groupSnap.exists()) return { success: false, error: 'Grup bulunamadı.' };
+            const groupData = groupSnap.data();
+
+            const updatedGuests = (groupData.guestPlayers || []).filter(g => g.id !== guestId);
+
+            // 3. Update all matches
+            const matchesRef = collection(db, 'matches');
+            const matchesQ = query(matchesRef, where("groupId", "==", groupId));
+            const matchesSnap = await getDocs(matchesQ);
+
+            const batchPromises = matchesSnap.docs.map(async (mDoc) => {
+                const matchData = mDoc.data();
+                let needsUpdate = false;
+                const updatePayload = {};
+
+                // Update Team A
+                if (matchData.teamA && matchData.teamA.some(p => p.id === guestId)) {
+                    updatePayload.teamA = matchData.teamA.map(p => p.id === guestId ? { ...p, id: targetUserId, name: newName } : p);
+                    needsUpdate = true;
+                }
+                // Update Team B
+                if (matchData.teamB && matchData.teamB.some(p => p.id === guestId)) {
+                    updatePayload.teamB = matchData.teamB.map(p => p.id === guestId ? { ...p, id: targetUserId, name: newName } : p);
+                    needsUpdate = true;
+                }
+
+                // Update Stats
+                if (matchData.stats && matchData.stats[guestId]) {
+                    const newStats = { ...matchData.stats };
+                    // If target user already has stats in this match (unlikely but possible), merge them? 
+                    // For now, assuming distinct.
+                    newStats[targetUserId] = newStats[guestId];
+                    delete newStats[guestId];
+                    updatePayload.stats = newStats;
+                    needsUpdate = true;
+                }
+
+                if (needsUpdate) {
+                    return updateDoc(doc(db, 'matches', mDoc.id), updatePayload);
+                }
+            });
+
+            await Promise.all(batchPromises);
+
+            // 4. Update Group
+            await updateDoc(groupRef, {
+                guestPlayers: updatedGuests
+            });
+
+            return { success: true };
+        } catch (error) {
+            console.error("Error merging guest:", error);
+            return { success: false, error: 'Eşleştirme sırasında hata oluştu.' };
+        }
+    };
+
 
 
     const removeMember = async (groupId, memberId) => {
@@ -697,6 +764,7 @@ export const DataProvider = ({ children }) => {
         joinGroup,
         addGuestMember,
         removeGuestMember,
+        mergeGuestToUser,
         removeMember,
         addAdmin,
         removeAdmin,

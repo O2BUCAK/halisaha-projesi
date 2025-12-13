@@ -41,17 +41,18 @@ export const AuthProvider = ({ children }) => {
         return unsubscribe;
     }, []);
 
-    const register = async (name, email, password) => {
+    const register = async (name, nickname, email, password) => {
         try {
             const { user } = await createUserWithEmailAndPassword(auth, email, password);
 
-            // Update display name in Firebase Auth
-            await updateFirebaseProfile(user, { displayName: name });
+            // Update display name in Firebase Auth (use nickname if provided, else name)
+            await updateFirebaseProfile(user, { displayName: nickname || name });
 
             // Create user document in Firestore
             const userData = {
                 id: user.uid,
                 name: name,
+                nickname: nickname || name, // Default to name if empty
                 email: email,
                 createdAt: new Date().toISOString(),
                 bio: '',
@@ -139,9 +140,9 @@ export const AuthProvider = ({ children }) => {
             const userDocRef = doc(db, 'users', currentUser.uid || currentUser.id);
             await updateDoc(userDocRef, data);
 
-            // Also update Firebase Auth profile if name changed
-            if (data.name && auth.currentUser) {
-                await updateFirebaseProfile(auth.currentUser, { displayName: data.name });
+            // Also update Firebase Auth profile if name/nickname changed
+            if ((data.name || data.nickname) && auth.currentUser) {
+                await updateFirebaseProfile(auth.currentUser, { displayName: data.nickname || data.name });
             }
 
             // Update local state
