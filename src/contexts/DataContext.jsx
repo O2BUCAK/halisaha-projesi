@@ -11,6 +11,7 @@ import {
     updateDoc,
     arrayUnion,
     getDocs,
+    getDoc,
     serverTimestamp
 } from 'firebase/firestore';
 
