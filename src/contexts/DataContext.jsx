@@ -528,6 +528,20 @@ export const DataProvider = ({ children }) => {
         }
     };
 
+    const updateMatchTeams = async (matchId, teamA, teamB) => {
+        try {
+            const matchRef = doc(db, 'matches', matchId);
+            await updateDoc(matchRef, {
+                teamA,
+                teamB
+            });
+            return { success: true };
+        } catch (error) {
+            console.error("Error updating match teams:", error);
+            return { success: false, error: 'Takımlar güncellenemedi.' };
+        }
+    };
+
     const assignMatchToSeason = async (matchId, seasonId) => {
         try {
             const matchRef = doc(db, 'matches', matchId);
@@ -676,7 +690,9 @@ export const DataProvider = ({ children }) => {
         fetchGroup,
         sendJoinRequest,
         getJoinRequests,
-        respondToJoinRequest
+        getJoinRequests,
+        respondToJoinRequest,
+        updateMatchTeams
     };
 
     return (

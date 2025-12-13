@@ -8,7 +8,7 @@ import TacticalBoard from '../../components/TacticalBoard';
 
 const MatchDetail = () => {
     const { matchId } = useParams();
-    const { matches, groups, finishMatch, getUsersDetails } = useData();
+    const { matches, groups, finishMatch, getUsersDetails, updateMatchTeams } = useData();
     const { currentUser } = useAuth();
 
     const match = matches.find(m => m.id === matchId);
@@ -132,9 +132,16 @@ const MatchDetail = () => {
         setIsEditing(false);
     };
 
-    const handleTacticalSave = (newTeamA, newTeamB) => {
+    const handleTacticalSave = async (newTeamA, newTeamB) => {
         setTeamA(newTeamA);
         setTeamB(newTeamB);
+        // Persist immediate changes for tactical board
+        const result = await updateMatchTeams(matchId, newTeamA, newTeamB);
+        if (result.success) {
+            alert('Taktik/Pozisyonlar kaydedildi!');
+        } else {
+            alert('Kaydedilirken hata oluştu.');
+        }
     };
 
     return (
