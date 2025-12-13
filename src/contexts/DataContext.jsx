@@ -11,6 +11,7 @@ import {
     updateDoc,
     arrayUnion,
     getDocs,
+    getDoc,
     serverTimestamp
 } from 'firebase/firestore';
 
@@ -23,6 +24,7 @@ export const DataProvider = ({ children }) => {
     const [groups, setGroups] = useState([]);
     const [matches, setMatches] = useState([]);
     const [invitations, setInvitations] = useState([]);
+    const [joinRequests, setJoinRequests] = useState([]); // New state for admin view
     const [loading, setLoading] = useState(true);
 
     // Subscribe to user's groups
@@ -267,9 +269,6 @@ export const DataProvider = ({ children }) => {
     const getUsersDetails = async (userIds) => {
         if (!userIds || userIds.length === 0) return [];
         try {
-            // Firestore 'in' query is limited to 10 items. We might need to batch or just fetch individually.
-            // For simplicity in this scale, let's fetch individually for now or use batches of 10.
-            // Or better, just use Promise.all with getDoc.
             const userPromises = userIds.map(id => getDoc(doc(db, 'users', id)));
             const userSnapshots = await Promise.all(userPromises);
             return userSnapshots.map(snap => ({ id: snap.id, ...snap.data() }));
@@ -279,7 +278,20 @@ export const DataProvider = ({ children }) => {
         }
     };
 
-    const sendInvitation = async (groupId, email) => {
+    const fetchGroup = async (groupId) => {
+        try {
+            const groupDoc = await getDoc(doc(db, 'groups', groupId));
+            if (groupDoc.exists()) {
+                return { id: groupDoc.id, ...groupDoc.data() };
+            }
+            return null;
+        } catch (error) {
+            console.error("Error fetching group:", error);
+            return null;
+        }
+    };
+
+    const sendInvitation = async (groupId, email, guestId = null) => {
         if (!currentUser) return { success: false, error: 'Not logged in' };
 
         try {
@@ -306,6 +318,7 @@ export const DataProvider = ({ children }) => {
                 groupId,
                 groupName: group?.name || 'Unknown Group',
                 email,
+                guestId, // Store linked guest ID
                 invitedBy: currentUser.uid || currentUser.id,
                 invitedByName: currentUser.name || currentUser.displayName || 'Bir kullanıcı',
                 status: 'pending',
@@ -325,25 +338,77 @@ export const DataProvider = ({ children }) => {
 
         try {
             const invitationRef = doc(db, 'invitations', invitationId);
-            const invitationDoc = await getDocs(query(collection(db, 'invitations'), where("__name__", "==", invitationId))); // workaround to get data if needed, or just use getDoc
-            // Actually we have the invitation data in state usually, but let's be safe.
+            // Fetch invitation to get details (guestId etc)
+            const invitationSnap = await getDoc(invitationRef);
+            if (!invitationSnap.exists()) return { success: false, error: 'Davet bulunamadı.' };
+
+            const invData = invitationSnap.data();
 
             // 1. Update invitation status
             await updateDoc(invitationRef, { status: 'accepted' });
 
             // 2. Add user to group
-            // We need the groupId from the invitation. 
-            // Since we are in the context, we might look it up from 'invitations' state if available, 
-            // or fetch the doc. Let's fetch to be safe.
-            // Note: updateDoc doesn't return the doc.
+            const groupId = invData.groupId;
+            const groupRef = doc(db, 'groups', groupId);
 
-            const inv = invitations.find(i => i.id === invitationId);
-            if (inv) {
-                const groupRef = doc(db, 'groups', inv.groupId);
-                await updateDoc(groupRef, {
-                    members: arrayUnion(currentUser.uid || currentUser.id)
-                });
+            // Prepare updates
+            const updates = {
+                members: arrayUnion(currentUser.uid || currentUser.id)
+            };
+
+            // 3. Handle Guest Merging if guestId exists
+            if (invData.guestId) {
+                // Remove from guestPlayers
+                // We need to read the group to filter the array locally or use arrayRemove (requires exact object match)
+                // Since guestPlayers is array of objects {id, name}, we need to find the object to remove it via arrayRemove
+                // OR just read, filter, update. Read-modify-write is safer here.
+                const groupSnap = await getDoc(groupRef);
+                if (groupSnap.exists()) {
+                    const groupData = groupSnap.data();
+                    const updatedGuests = (groupData.guestPlayers || []).filter(g => g.id !== invData.guestId);
+                    updates.guestPlayers = updatedGuests;
+
+                    // Also update all historical matches!
+                    // This is heavy, but necessary. 
+                    const matchesRef = collection(db, 'matches');
+                    const matchesQ = query(matchesRef, where("groupId", "==", groupId));
+                    const matchesSnap = await getDocs(matchesQ);
+
+                    const batchPromises = matchesSnap.docs.map(async (mDoc) => {
+                        const matchData = mDoc.data();
+                        let needsUpdate = false;
+                        const updatePayload = {};
+
+                        // Update Team A
+                        if (matchData.teamA && matchData.teamA.some(p => p.id === invData.guestId)) {
+                            updatePayload.teamA = matchData.teamA.map(p => p.id === invData.guestId ? { ...p, id: currentUser.uid || currentUser.id, name: currentUser.name } : p);
+                            needsUpdate = true;
+                        }
+                        // Update Team B
+                        if (matchData.teamB && matchData.teamB.some(p => p.id === invData.guestId)) {
+                            updatePayload.teamB = matchData.teamB.map(p => p.id === invData.guestId ? { ...p, id: currentUser.uid || currentUser.id, name: currentUser.name } : p);
+                            needsUpdate = true;
+                        }
+
+                        // Update Stats
+                        if (matchData.stats && matchData.stats[invData.guestId]) {
+                            const newStats = { ...matchData.stats };
+                            newStats[currentUser.uid || currentUser.id] = newStats[invData.guestId];
+                            delete newStats[invData.guestId];
+                            updatePayload.stats = newStats;
+                            needsUpdate = true;
+                        }
+
+                        if (needsUpdate) {
+                            return updateDoc(doc(db, 'matches', mDoc.id), updatePayload);
+                        }
+                    });
+
+                    await Promise.all(batchPromises);
+                }
             }
+
+            await updateDoc(groupRef, updates);
 
             return { success: true };
         } catch (error) {
@@ -359,6 +424,60 @@ export const DataProvider = ({ children }) => {
             return { success: true };
         } catch (error) {
             console.error("Error rejecting invitation:", error);
+            return { success: false, error: 'İşlem başarısız.' };
+        }
+    };
+
+    const sendJoinRequest = async (groupId) => {
+        if (!currentUser) return { success: false, error: 'Not logged in' };
+        try {
+            // Check if request exists
+            const requestsRef = collection(db, 'joinRequests');
+            const q = query(requestsRef, where("groupId", "==", groupId), where("userId", "==", currentUser.uid || currentUser.id), where("status", "==", "pending"));
+            const existing = await getDocs(q);
+            if (!existing.empty) return { success: false, error: 'Zaten beklemede bir isteğiniz var.' };
+
+            await addDoc(collection(db, 'joinRequests'), {
+                groupId,
+                userId: currentUser.uid || currentUser.id,
+                userName: currentUser.name || currentUser.displayName,
+                userEmail: currentUser.email,
+                status: 'pending',
+                createdAt: serverTimestamp()
+            });
+            return { success: true };
+        } catch (error) {
+            console.error("Error sending join request:", error);
+            return { success: false, error: 'İstek gönderilemedi.' };
+        }
+    };
+
+    const getJoinRequests = async (groupId) => {
+        try {
+            const requestsRef = collection(db, 'joinRequests');
+            const q = query(requestsRef, where("groupId", "==", groupId), where("status", "==", "pending"));
+            const snapshot = await getDocs(q);
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) {
+            console.error("Error getting join requests:", error);
+            return [];
+        }
+    };
+
+    const respondToJoinRequest = async (requestId, status, groupId, userId) => {
+        try {
+            const requestRef = doc(db, 'joinRequests', requestId);
+            await updateDoc(requestRef, { status });
+
+            if (status === 'approved') {
+                const groupRef = doc(db, 'groups', groupId);
+                await updateDoc(groupRef, {
+                    members: arrayUnion(userId)
+                });
+            }
+            return { success: true };
+        } catch (error) {
+            console.error("Error responding to request:", error);
             return { success: false, error: 'İşlem başarısız.' };
         }
     };
@@ -463,17 +582,32 @@ export const DataProvider = ({ children }) => {
         matchList.forEach(match => {
             const allPlayers = [...(match.teamA || []), ...(match.teamB || [])];
             allPlayers.forEach(player => {
+                if (!player || !player.id) return; // Safety check
+
                 if (!stats[player.id]) {
                     stats[player.id] = {
                         id: player.id,
-                        name: player.name,
+                        name: player.name || 'Bilinmeyen',
                         matches: 0,
                         goals: 0,
                         assists: 0,
-                        wins: 0
+                        wins: 0,
+                        saves: 0,
+                        cleanSheets: 0
                     };
                 }
                 stats[player.id].matches += 1;
+
+                // Check for Clean Sheet
+                const isTeamA = (match.teamA || []).some(p => p.id === player.id);
+                const isTeamB = (match.teamB || []).some(p => p.id === player.id);
+
+                if (isTeamA && match.score && match.score.b === 0) {
+                    stats[player.id].cleanSheets += 1;
+                }
+                if (isTeamB && match.score && match.score.a === 0) {
+                    stats[player.id].cleanSheets += 1;
+                }
             });
 
             if (match.stats) {
@@ -481,6 +615,7 @@ export const DataProvider = ({ children }) => {
                     if (stats[playerId]) {
                         stats[playerId].goals += (playerStats.goals || 0);
                         stats[playerId].assists += (playerStats.assists || 0);
+                        stats[playerId].saves += (playerStats.saves || 0);
                     }
                 });
             }
@@ -537,7 +672,11 @@ export const DataProvider = ({ children }) => {
         getSeasonStats,
         getAllTimeStats,
         getMyGroups,
-        getGroupMatches
+        getGroupMatches,
+        fetchGroup,
+        sendJoinRequest,
+        getJoinRequests,
+        respondToJoinRequest
     };
 
     return (
