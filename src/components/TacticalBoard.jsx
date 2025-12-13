@@ -14,7 +14,7 @@ const TacticalBoard = ({ match, onSave }) => {
             team: 'teamA',
             x: p.x || 20,
             y: p.y || 50,
-            color: 'var(--accent-primary)'
+            color: p.isGoalkeeper ? '#FFD700' : 'var(--accent-primary)' // Gold for GK
         }));
 
         const teamBPlayers = (match.teamB || []).map(p => ({
@@ -22,7 +22,7 @@ const TacticalBoard = ({ match, onSave }) => {
             team: 'teamB',
             x: p.x || 80,
             y: p.y || 50,
-            color: 'var(--accent-secondary)'
+            color: p.isGoalkeeper ? '#FFD700' : 'var(--accent-secondary)' // Gold for GK
         }));
 
         setPlayers([...teamAPlayers, ...teamBPlayers]);
@@ -105,7 +105,7 @@ const TacticalBoard = ({ match, onSave }) => {
                     >
                         <div style={{
                             width: '32px', height: '32px', borderRadius: '50%',
-                            background: p.team === 'teamA' ? 'var(--accent-primary)' : 'var(--accent-secondary)',
+                            background: p.color,
                             border: '2px solid white',
                             boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',

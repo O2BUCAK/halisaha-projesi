@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { Trophy, Save, Users, UserPlus, Video, FileText, ExternalLink } from 'lucide-react';
+import { Trophy, Save, Users, UserPlus, Video, FileText, ExternalLink, Shield } from 'lucide-react';
 
 import TacticalBoard from '../../components/TacticalBoard';
 
@@ -102,16 +102,28 @@ const MatchDetail = () => {
             if (teamA.find(p => p.id === player.id)) {
                 setTeamA(teamA.filter(p => p.id !== player.id));
             } else {
-                setTeamA([...teamA, player]);
+                setTeamA([...teamA, { ...player, isGoalkeeper: false }]); // Default to not GK
                 setTeamB(teamB.filter(p => p.id !== player.id)); // Remove from B if exists
             }
         } else {
             if (teamB.find(p => p.id === player.id)) {
                 setTeamB(teamB.filter(p => p.id !== player.id));
             } else {
-                setTeamB([...teamB, player]);
+                setTeamB([...teamB, { ...player, isGoalkeeper: false }]); // Default to not GK
                 setTeamA(teamA.filter(p => p.id !== player.id)); // Remove from A if exists
             }
+        }
+    };
+
+    const toggleGoalkeeper = (player, team) => {
+        if (team === 'A') {
+            setTeamA(teamA.map(p =>
+                p.id === player.id ? { ...p, isGoalkeeper: !p.isGoalkeeper } : p
+            ));
+        } else {
+            setTeamB(teamB.map(p =>
+                p.id === player.id ? { ...p, isGoalkeeper: !p.isGoalkeeper } : p
+            ));
         }
     };
 
@@ -269,7 +281,10 @@ const MatchDetail = () => {
                                     borderRadius: 'var(--radius-md)',
                                     border: '1px solid var(--border-color)'
                                 }}>
-                                    <span style={{ marginRight: '0.5rem' }}>{player.name}</span>
+                                    <span style={{ marginRight: '0.5rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        {player.name}
+                                        {(inA?.isGoalkeeper || inB?.isGoalkeeper) && <Shield size={14} fill="gold" color="gold" />}
+                                    </span>
                                     <div style={{ display: 'flex', gap: '0.25rem' }}>
                                         <button
                                             onClick={() => togglePlayerTeam(player, 'A')}
@@ -295,6 +310,25 @@ const MatchDetail = () => {
                                         >
                                             B
                                         </button>
+                                        {(inA || inB) && (
+                                            <button
+                                                onClick={() => toggleGoalkeeper(player, inA ? 'A' : 'B')}
+                                                style={{
+                                                    padding: '0.25rem',
+                                                    borderRadius: '4px',
+                                                    background: (inA?.isGoalkeeper || inB?.isGoalkeeper) ? '#FFD700' : 'rgba(255,255,255,0.1)',
+                                                    color: (inA?.isGoalkeeper || inB?.isGoalkeeper) ? '#000' : 'var(--text-secondary)',
+                                                    border: '1px solid var(--border-color)',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }}
+                                                title="Kaleci Yap"
+                                            >
+                                                <Shield size={14} />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -311,7 +345,10 @@ const MatchDetail = () => {
                     {teamA.length === 0 && <p style={{ color: 'var(--text-secondary)' }}>Oyuncu seçilmedi.</p>}
                     {teamA.map(player => (
                         <div key={player.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                            <span>{player.name}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                {player.name}
+                                {player.isGoalkeeper && <Shield size={14} fill="gold" color="gold" />}
+                            </span>
                             <div style={{ display: 'flex', gap: '1rem' }}>
                                 <div style={{ textAlign: 'center' }}>
                                     <label style={{ fontSize: '0.7rem', display: 'block', color: 'var(--text-secondary)' }}>Gol</label>
@@ -366,7 +403,10 @@ const MatchDetail = () => {
                     {teamB.length === 0 && <p style={{ color: 'var(--text-secondary)' }}>Oyuncu seçilmedi.</p>}
                     {teamB.map(player => (
                         <div key={player.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                            <span>{player.name}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                {player.name}
+                                {player.isGoalkeeper && <Shield size={14} fill="gold" color="gold" />}
+                            </span>
                             <div style={{ display: 'flex', gap: '1rem' }}>
                                 <div style={{ textAlign: 'center' }}>
                                     <label style={{ fontSize: '0.7rem', display: 'block', color: 'var(--text-secondary)' }}>Gol</label>
