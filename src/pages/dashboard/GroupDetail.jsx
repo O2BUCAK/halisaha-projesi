@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import InviteMember from '../../components/InviteMember';
-import { Users, Calendar, Plus, Copy, Check, UserPlus, Trophy, Play, Square, Mail, Trash2, Shield, ShieldAlert, Video, FileText } from 'lucide-react';
+import { Users, Calendar, Plus, Copy, Check, UserPlus, Trophy, Play, Square, Mail, Trash2, Shield, ShieldAlert, Video, FileText, X } from 'lucide-react';
 import AdSenseBanner from '../../components/AdSenseBanner';
 
 const GroupDetail = () => {
