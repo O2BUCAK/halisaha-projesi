@@ -5,18 +5,14 @@ import { DataProvider } from './contexts/DataContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
+import PrivateRoute from './components/PrivateRoute';
+
 // Pages (Placeholders for now)
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Home from './pages/Home';
-
-// Protected Route Component
-const PrivateRoute = ({ children }) => {
-  const { currentUser } = useAuth();
-  return currentUser ? children : <Navigate to="/login" />;
-};
 
 function App() {
   return (
@@ -31,14 +27,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-                <Route
-                  path="/dashboard/*"
-                  element={
-                    <PrivateRoute>
-                      <Dashboard />
-                    </PrivateRoute>
-                  }
-                />
+                <Route path="/dashboard/*" element={<Dashboard />} />
               </Routes>
             </main>
             <Footer />
