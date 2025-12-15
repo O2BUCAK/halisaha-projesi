@@ -1,0 +1,135 @@
+
+C:\Users\ersinozbucak\Documents\halisaha-projesi\src\App.jsx
+  3:24  error  'useAuth' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\ersinozbucak\Documents\halisaha-projesi\src\components\TacticalBoard.jsx
+   5:12  error    'selectedTeam' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    no-unused-vars
+   5:26  error    'setSelectedTeam' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 no-unused-vars
+  30:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  28 |         }));
+  29 |
+> 30 |         setPlayers([...teamAPlayers, ...teamBPlayers]);
+     |         ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  31 |     }, [match]);
+  32 |
+  33 |     const handleDragStart = (e, playerId) => {  react-hooks/set-state-in-effect
+  31:8   warning  React Hook useEffect has a missing dependency: 'group?.jerseyNumbers'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         react-hooks/exhaustive-deps
+
+C:\Users\ersinozbucak\Documents\halisaha-projesi\src\contexts\AuthContext.jsx
+   17:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  133:18  error  'error' is defined but never used                                                                                               no-unused-vars
+  165:32  error  'email' is defined but never used                                                                                               no-unused-vars
+  165:39  error  'code' is defined but never used                                                                                                no-unused-vars
+
+C:\Users\ersinozbucak\Documents\halisaha-projesi\src\contexts\DataContext.jsx
+   21:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            react-refresh/only-export-components
+   28:12  error  'joinRequests' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              no-unused-vars
+   28:26  error  'setJoinRequests' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           no-unused-vars
+   29:12  error  'loading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-unused-vars
+   34:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  32 |     useEffect(() => {
+  33 |         if (!currentUser) {
+> 34 |             setGroups([]);
+     |             ^^^^^^^^^ Avoid calling setState() directly within an effect
+  35 |             setMatches([]);
+  36 |             setLoading(false);
+  37 |             return;  react-hooks/set-state-in-effect
+   58:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  56 |     useEffect(() => {
+  57 |         if (!currentUser) {
+> 58 |             setInvitations([]);
+     |             ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  59 |             return;
+  60 |         }
+  61 |                                         react-hooks/set-state-in-effect
+   83:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  81 |     useEffect(() => {
+  82 |         if (groups.length === 0) {
+> 83 |             setMatches([]);
+     |             ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  84 |             return;
+  85 |         }
+  86 |                                          react-hooks/set-state-in-effect
+  332:26  error  'arrayRemove' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              no-undef
+  333:25  error  'arrayRemove' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              no-undef
+  359:25  error  'arrayRemove' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              no-undef
+
+C:\Users\ersinozbucak\Documents\halisaha-projesi\src\firebase.js
+  20:7  error  'analytics' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\ersinozbucak\Documents\halisaha-projesi\src\pages\dashboard\GroupDetail.jsx
+   22:12  error    'requestsLoading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                             no-unused-vars
+   23:12  error    'activeTab' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                   no-unused-vars
+   23:23  error    'setActiveTab' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                no-unused-vars
+   66:8   warning  React Hook useEffect has a missing dependency: 'fetchGroup'. Either include it or remove the dependency array                                                                               react-hooks/exhaustive-deps
+   78:8   warning  React Hook useEffect has a missing dependency: 'getJoinRequests'. Either include it or remove the dependency array                                                                          react-hooks/exhaustive-deps
+   94:8   warning  React Hook useEffect has a missing dependency: 'getUsersDetails'. Either include it or remove the dependency array                                                                          react-hooks/exhaustive-deps
+  146:43  error    React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+  147:49  error    React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+  148:49  error    React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+  714:53  error    'index' is defined but never used                                                                                                                                                           no-unused-vars
+
+C:\Users\ersinozbucak\Documents\halisaha-projesi\src\pages\dashboard\MatchDetail.jsx
+  27:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  25 |     useEffect(() => {
+  26 |         if (!contextMatch && matchId) {
+> 27 |             setLoading(true);
+     |             ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  28 |             const loadData = async () => {
+  29 |                 // 1. Fetch Match
+  30 |                 const m = await fetchMatch(matchId);  react-hooks/set-state-in-effect
+  47:8   warning  React Hook useEffect has missing dependencies: 'fetchGroup', 'fetchMatch', and 'groups'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/exhaustive-deps
+  70:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  68 |     useEffect(() => {
+  69 |         if (match) {
+> 70 |             setScoreA(match.score?.a || 0);
+     |             ^^^^^^^^^ Avoid calling setState() directly within an effect
+  71 |             setScoreB(match.score?.b || 0);
+  72 |             setTeamA(match.teamA || []);
+  73 |             setTeamB(match.teamB || []);            react-hooks/set-state-in-effect
+  91:8   warning  React Hook useEffect has missing dependencies: 'getUsersDetails' and 'group'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             react-hooks/exhaustive-deps
+
+✖ 34 problems (28 errors, 6 warnings)
+

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Mail, Lock, AlertCircle, Chrome, CheckCircle } from 'lucide-react';
+import { User, Mail, Lock, AlertCircle, Chrome } from 'lucide-react';
 import { toTitleCase } from '../utils';
 
 const Register = () => {
@@ -47,7 +47,7 @@ const Register = () => {
                 setStep('verify');
                 // Simulate sending email
                 alert(`DEMO: Doğrulama kodunuz: ${result.demoCode} `);
-                console.log('Verification Code:', result.demoCode);
+
             } else {
                 navigate('/dashboard');
             }
