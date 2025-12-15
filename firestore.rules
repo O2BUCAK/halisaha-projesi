@@ -2,6 +2,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    function isGroupAdmin(groupId) {
+      let groupData = get(/databases/$(database)/documents/groups/$(groupId)).data;
+      return request.auth.uid == groupData.createdBy || request.auth.uid in groupData.get('admins', []);
+    }
+
     // Users collection - users can only read/write their own data
     match /users/{userId} {
       allow read: if true;
@@ -42,8 +47,14 @@ service cloud.firestore {
 
     // Join Requests collection
     match /joinRequests/{requestId} {
-        allow create: if request.auth != null;
-        allow read, update: if request.auth != null; // Simplified permission for MVP
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        
+        allow read: if request.auth != null && (
+          request.auth.uid == resource.data.userId || 
+          isGroupAdmin(resource.data.groupId)
+        );
+
+        allow update: if request.auth != null && isGroupAdmin(resource.data.groupId);
     }
     
     // Matches collection
@@ -51,12 +62,13 @@ service cloud.firestore {
       // Allow public read access to matches
       allow read: if true;
       
-      // Authenticated users can create matches (we'll verify group membership)
-      // Update/delete only by authenticated users
+      // Only group admins can create matches
       allow create: if request.auth != null && 
-                       request.resource.data.groupId != null;
+                       request.resource.data.groupId != null &&
+                       isGroupAdmin(request.resource.data.groupId);
       
-      allow update, delete: if request.auth != null;
+      // Only group admins can update or delete
+      allow update, delete: if request.auth != null && isGroupAdmin(resource.data.groupId);
     }
     
     // Invitations collection
