@@ -153,6 +153,7 @@ const GroupDetail = () => {
             if (statsSortBy === 'matches') return b.matches - a.matches;
             if (statsSortBy === 'saves') return (b.saves || 0) - (a.saves || 0);
             if (statsSortBy === 'cleanSheets') return (b.cleanSheets || 0) - (a.cleanSheets || 0);
+            if (statsSortBy === 'rating') return (parseFloat(b.averageRating === '-' ? 0 : b.averageRating) - parseFloat(a.averageRating === '-' ? 0 : a.averageRating));
             // Default GK: Clean Sheets then Saves
             if (b.cleanSheets !== a.cleanSheets) return (b.cleanSheets || 0) - (a.cleanSheets || 0);
             return (b.saves || 0) - (a.saves || 0);
@@ -161,6 +162,7 @@ const GroupDetail = () => {
         if (statsSortBy === 'matches') return b.matches - a.matches;
         if (statsSortBy === 'assists') return (b.assists || 0) - (a.assists || 0);
         if (statsSortBy === 'contribution') return ((b.goals || 0) + (b.assists || 0)) - ((a.goals || 0) + (a.assists || 0));
+        if (statsSortBy === 'rating') return (parseFloat(b.averageRating === '-' ? 0 : b.averageRating) - parseFloat(a.averageRating === '-' ? 0 : a.averageRating));
         // Default Player: Goals
         return (b.goals || 0) - (a.goals || 0);
     });
@@ -459,11 +461,13 @@ const GroupDetail = () => {
                                     <>
                                         <th style={{ padding: '0.75rem', textAlign: 'center' }}>Gol</th>
                                         <th style={{ padding: '0.75rem', textAlign: 'center' }}>Asist</th>
+                                        <th style={{ padding: '0.75rem', textAlign: 'center' }}>Ort. Puan</th>
                                     </>
                                 ) : (
                                     <>
                                         <th style={{ padding: '0.75rem', textAlign: 'center' }}>Kurtarış</th>
                                         <th style={{ padding: '0.75rem', textAlign: 'center' }}>Gol Yememe</th>
+                                        <th style={{ padding: '0.75rem', textAlign: 'center' }}>Ort. Puan</th>
                                     </>
                                 )}
                             </tr>
@@ -492,11 +496,25 @@ const GroupDetail = () => {
                                             <>
                                                 <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: 'bold', color: 'var(--accent-primary)' }}>{stat.goals}</td>
                                                 <td style={{ padding: '0.75rem', textAlign: 'center' }}>{stat.assists}</td>
+                                                <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: 'bold' }}>
+                                                    {stat.averageRating !== '-' ? (
+                                                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+                                                            {stat.averageRating} <Star size={12} fill="orange" color="orange" />
+                                                        </span>
+                                                    ) : '-'}
+                                                </td>
                                             </>
                                         ) : (
                                             <>
                                                 <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: 'bold', color: 'var(--accent-primary)' }}>{stat.saves || 0}</td>
                                                 <td style={{ padding: '0.75rem', textAlign: 'center' }}>{stat.cleanSheets || 0}</td>
+                                                <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: 'bold' }}>
+                                                    {stat.averageRating !== '-' ? (
+                                                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+                                                            {stat.averageRating} <Star size={12} fill="orange" color="orange" />
+                                                        </span>
+                                                    ) : '-'}
+                                                </td>
                                             </>
                                         )}
                                     </tr>

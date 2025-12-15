@@ -758,74 +758,101 @@ export const DataProvider = ({ children }) => {
                     }
                 });
             }
+
+            // Aggregate Ratings
+            if (match.ratings) {
+                Object.entries(match.ratings).forEach(([playerId, playerRatings]) => {
+                    if (stats[playerId]) {
+                        const votes = Object.values(playerRatings);
+                        if (votes.length > 0) {
+                            const sum = votes.reduce((a, b) => a + b, 0);
+                            const avg = sum / votes.length;
+
+                            if (!stats[playerId].totalRatingSum) stats[playerId].totalRatingSum = 0;
+                            if (!stats[playerId].ratedMatchCount) stats[playerId].ratedMatchCount = 0;
+
+                            stats[playerId].totalRatingSum += avg;
+                            stats[playerId].ratedMatchCount += 1;
+                        }
+                    }
+                });
+            }
         });
 
-        return Object.values(stats).sort((a, b) => b.goals - a.goals);
-    };
+        // Calculate Average
+        Object.values(stats).forEach(playerStat => {
+            playerStat.averageRating = playerStat.ratedMatchCount > 0
+                ? (playerStat.totalRatingSum / playerStat.ratedMatchCount).toFixed(1)
+                : '-';
+        });
+    });
 
-    const getSeasonStats = (groupId, seasonId) => {
-        const seasonMatches = matches.filter(m =>
-            m.groupId === groupId &&
-            m.seasonId === seasonId &&
-            m.status === 'played'
-        );
-        return calculateStats(seasonMatches);
-    };
+    return Object.values(stats).sort((a, b) => b.goals - a.goals);
+};
 
-    const getAllTimeStats = (groupId) => {
-        const groupMatches = matches.filter(m =>
-            m.groupId === groupId &&
-            m.status === 'played'
-        );
-        return calculateStats(groupMatches);
-    };
-
-    const getMyGroups = () => {
-        return groups; // Already filtered by subscription
-    };
-
-    const getGroupMatches = (groupId) => {
-        return matches.filter(m => m.groupId === groupId);
-    };
-
-    const value = {
-        groups,
-        matches,
-        invitations,
-        createGroup,
-        joinGroup,
-        addGuestMember,
-        removeGuestMember,
-        mergeGuestToUser,
-        givePlayerRating,
-        removeMember,
-        addAdmin,
-        removeAdmin,
-        getUsersDetails,
-        sendInvitation,
-        acceptInvitation,
-        rejectInvitation,
-        createMatch,
-        finishMatch,
-        assignMatchToSeason,
-        startSeason,
-        endSeason,
-        getSeasonStats,
-        getAllTimeStats,
-        getMyGroups,
-        getGroupMatches,
-        fetchGroup,
-        fetchMatch,
-        sendJoinRequest,
-        getJoinRequests,
-        respondToJoinRequest,
-        updateMatchTeams,
-        updateGroupJerseyNumbers
-    };
-
-    return (
-        <DataContext.Provider value={value}>
-            {children}
-        </DataContext.Provider>
+const getSeasonStats = (groupId, seasonId) => {
+    const seasonMatches = matches.filter(m =>
+        m.groupId === groupId &&
+        m.seasonId === seasonId &&
+        m.status === 'played'
     );
+    return calculateStats(seasonMatches);
+};
+
+const getAllTimeStats = (groupId) => {
+    const groupMatches = matches.filter(m =>
+        m.groupId === groupId &&
+        m.status === 'played'
+    );
+    return calculateStats(groupMatches);
+};
+
+const getMyGroups = () => {
+    return groups; // Already filtered by subscription
+};
+
+const getGroupMatches = (groupId) => {
+    return matches.filter(m => m.groupId === groupId);
+};
+
+const value = {
+    groups,
+    matches,
+    invitations,
+    createGroup,
+    joinGroup,
+    addGuestMember,
+    removeGuestMember,
+    mergeGuestToUser,
+    givePlayerRating,
+    removeMember,
+    addAdmin,
+    removeAdmin,
+    getUsersDetails,
+    sendInvitation,
+    acceptInvitation,
+    rejectInvitation,
+    createMatch,
+    finishMatch,
+    assignMatchToSeason,
+    startSeason,
+    endSeason,
+    getSeasonStats,
+    getAllTimeStats,
+    getMyGroups,
+    getGroupMatches,
+    fetchGroup,
+    fetchMatch,
+    sendJoinRequest,
+    getJoinRequests,
+    respondToJoinRequest,
+    updateMatchTeams,
+    updateGroupJerseyNumbers
+};
+
+return (
+    <DataContext.Provider value={value}>
+        {children}
+    </DataContext.Provider>
+);
 };
