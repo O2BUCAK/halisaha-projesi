@@ -143,22 +143,39 @@ const GroupDetail = () => {
         ? getAllTimeStats(groupId)
         : getSeasonStats(groupId, selectedSeasonId);
 
-    // Sort logic for displayedStats based on statType
+    const [statsSortBy, setStatsSortBy] = useState('goals'); // players: goals, assists, matches; gk: saves, cleanSheets, matches
+    const [matchSortOrder, setMatchSortOrder] = useState('desc'); // desc (newest), asc (oldest)
+
+    // Sort logic for displayedStats based on statType and statsSortBy
     const sortedStats = [...displayedStats].sort((a, b) => {
         if (statType === 'goalkeepers') {
-            // Sort by clean sheets desc, then saves desc
+            // Goalkeeper sorts
+            if (statsSortBy === 'matches') return b.matches - a.matches;
+            if (statsSortBy === 'saves') return (b.saves || 0) - (a.saves || 0);
+            if (statsSortBy === 'cleanSheets') return (b.cleanSheets || 0) - (a.cleanSheets || 0);
+            // Default GK: Clean Sheets then Saves
             if (b.cleanSheets !== a.cleanSheets) return (b.cleanSheets || 0) - (a.cleanSheets || 0);
             return (b.saves || 0) - (a.saves || 0);
         }
-        // Default players: Goals desc
-        return b.goals - a.goals;
+        // Player sorts
+        if (statsSortBy === 'matches') return b.matches - a.matches;
+        if (statsSortBy === 'assists') return (b.assists || 0) - (a.assists || 0);
+        if (statsSortBy === 'contribution') return ((b.goals || 0) + (b.assists || 0)) - ((a.goals || 0) + (a.assists || 0));
+        // Default Player: Goals
+        return (b.goals || 0) - (a.goals || 0);
     });
 
-    // Filter matches based on selection and sort by date (oldest first) using string comparison
+    // Filter matches based on selection and sort by date using string comparison
     const displayedMatches = getGroupMatches(groupId).filter(m => {
         if (selectedSeasonId === 'all-time') return true;
         return m.seasonId === selectedSeasonId;
-    }).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    }).sort((a, b) => {
+        const dateA = a.date || '';
+        const dateB = b.date || '';
+        return matchSortOrder === 'desc'
+            ? dateB.localeCompare(dateA)
+            : dateA.localeCompare(dateB);
+    });
 
     const copyCode = () => {
         navigator.clipboard.writeText(group.joinCode);
@@ -373,9 +390,39 @@ const GroupDetail = () => {
                         <h4 style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>
                             {selectedSeasonId === 'all-time' ? 'Genel İstatistikler (Tüm Zamanlar)' : 'Sezon İstatistikleri'}
                         </h4>
-                        <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-primary)', padding: '0.25rem', borderRadius: 'var(--radius-sm)' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-primary)', padding: '0.25rem', borderRadius: 'var(--radius-sm)', alignItems: 'center' }}>
+                            {/* Stats Sort Dropdown */}
+                            <select
+                                value={statsSortBy}
+                                onChange={(e) => setStatsSortBy(e.target.value)}
+                                style={{
+                                    padding: '0.25rem',
+                                    borderRadius: 'var(--radius-sm)',
+                                    border: '1px solid var(--border-color)',
+                                    background: 'var(--bg-secondary)',
+                                    color: 'var(--text-primary)',
+                                    fontSize: '0.8rem',
+                                    marginRight: '0.5rem'
+                                }}
+                            >
+                                {statType === 'players' ? (
+                                    <>
+                                        <option value="goals">Gol</option>
+                                        <option value="assists">Asist</option>
+                                        <option value="contribution">Skor Katkısı</option>
+                                        <option value="matches">Maç</option>
+                                    </>
+                                ) : (
+                                    <>
+                                        <option value="cleanSheets">Gol Yememe</option>
+                                        <option value="saves">Kurtarış</option>
+                                        <option value="matches">Maç</option>
+                                    </>
+                                )}
+                            </select>
+
                             <button
-                                onClick={() => setStatType('players')}
+                                onClick={() => { setStatType('players'); setStatsSortBy('goals'); }}
                                 style={{
                                     padding: '0.25rem 0.5rem',
                                     borderRadius: 'var(--radius-sm)',
@@ -388,7 +435,7 @@ const GroupDetail = () => {
                                 Oyuncular
                             </button>
                             <button
-                                onClick={() => setStatType('goalkeepers')}
+                                onClick={() => { setStatType('goalkeepers'); setStatsSortBy('cleanSheets'); }}
                                 style={{
                                     padding: '0.25rem 0.5rem',
                                     borderRadius: 'var(--radius-sm)',
@@ -469,9 +516,18 @@ const GroupDetail = () => {
             <div className="responsive-grid-2-1">
                 {/* Matches Section */}
                 <div>
-                    <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Calendar size={20} /> Maçlar
-                    </h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h3 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                            <Calendar size={20} /> Maçlar
+                        </h3>
+                        <button
+                            onClick={() => setMatchSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                            className="btn btn-secondary"
+                            style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                        >
+                            {matchSortOrder === 'desc' ? '↓ En Yeni' : '↑ En Eski'}
+                        </button>
+                    </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         {displayedMatches.length > 0 ? (
