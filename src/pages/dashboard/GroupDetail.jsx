@@ -434,7 +434,11 @@ const GroupDetail = () => {
                                             }}>
                                                 {index + 1}
                                             </span>
-                                            {stat.name}
+                                            {(() => {
+                                                const member = memberDetails.find(m => m.id === stat.id);
+                                                // Prefer member name (from live profile), fallback to stat name (historical/guest)
+                                                return member ? (member.name || member.nickname) : stat.name;
+                                            })()}
                                         </td>
                                         <td style={{ padding: '0.75rem', textAlign: 'center' }}>{stat.matches}</td>
                                         {statType === 'players' ? (
