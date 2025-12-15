@@ -144,27 +144,50 @@ const GroupDetail = () => {
         : getSeasonStats(groupId, selectedSeasonId);
 
     const [statsSortBy, setStatsSortBy] = useState('goals'); // players: goals, assists, matches; gk: saves, cleanSheets, matches
+    const [statsSortOrder, setStatsSortOrder] = useState('desc'); // desc, asc
     const [matchSortOrder, setMatchSortOrder] = useState('desc'); // desc (newest), asc (oldest)
+
+    const handleStatSort = (criteria) => {
+        if (statsSortBy === criteria) {
+            setStatsSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+        } else {
+            setStatsSortBy(criteria);
+            setStatsSortOrder('desc');
+        }
+    };
+
+    const getSortIcon = (criteria) => {
+        if (statsSortBy !== criteria) return null;
+        return statsSortOrder === 'desc' ? '↓' : '↑';
+    };
 
     // Sort logic for displayedStats based on statType and statsSortBy
     const sortedStats = [...displayedStats].sort((a, b) => {
+        let diff = 0;
         if (statType === 'goalkeepers') {
             // Goalkeeper sorts
-            if (statsSortBy === 'matches') return b.matches - a.matches;
-            if (statsSortBy === 'saves') return (b.saves || 0) - (a.saves || 0);
-            if (statsSortBy === 'cleanSheets') return (b.cleanSheets || 0) - (a.cleanSheets || 0);
-            if (statsSortBy === 'rating') return (parseFloat(b.averageRating === '-' ? 0 : b.averageRating) - parseFloat(a.averageRating === '-' ? 0 : a.averageRating));
-            // Default GK: Clean Sheets then Saves
-            if (b.cleanSheets !== a.cleanSheets) return (b.cleanSheets || 0) - (a.cleanSheets || 0);
-            return (b.saves || 0) - (a.saves || 0);
+            if (statsSortBy === 'matches') diff = b.matches - a.matches;
+            else if (statsSortBy === 'saves') diff = (b.saves || 0) - (a.saves || 0);
+            else if (statsSortBy === 'cleanSheets') diff = (b.cleanSheets || 0) - (a.cleanSheets || 0);
+            else if (statsSortBy === 'rating') diff = (parseFloat(b.averageRating === '-' ? 0 : b.averageRating) - parseFloat(a.averageRating === '-' ? 0 : a.averageRating));
+            else {
+                // Default GK: Clean Sheets then Saves
+                if (b.cleanSheets !== a.cleanSheets) diff = (b.cleanSheets || 0) - (a.cleanSheets || 0);
+                else diff = (b.saves || 0) - (a.saves || 0);
+            }
+        } else {
+            // Player sorts
+            if (statsSortBy === 'matches') diff = b.matches - a.matches;
+            else if (statsSortBy === 'assists') diff = (b.assists || 0) - (a.assists || 0);
+            else if (statsSortBy === 'contribution') diff = ((b.goals || 0) + (b.assists || 0)) - ((a.goals || 0) + (a.assists || 0));
+            else if (statsSortBy === 'rating') diff = (parseFloat(b.averageRating === '-' ? 0 : b.averageRating) - parseFloat(a.averageRating === '-' ? 0 : a.averageRating));
+            else {
+                // Default Player: Goals
+                diff = (b.goals || 0) - (a.goals || 0);
+            }
         }
-        // Player sorts
-        if (statsSortBy === 'matches') return b.matches - a.matches;
-        if (statsSortBy === 'assists') return (b.assists || 0) - (a.assists || 0);
-        if (statsSortBy === 'contribution') return ((b.goals || 0) + (b.assists || 0)) - ((a.goals || 0) + (a.assists || 0));
-        if (statsSortBy === 'rating') return (parseFloat(b.averageRating === '-' ? 0 : b.averageRating) - parseFloat(a.averageRating === '-' ? 0 : a.averageRating));
-        // Default Player: Goals
-        return (b.goals || 0) - (a.goals || 0);
+
+        return statsSortOrder === 'desc' ? diff : -diff;
     });
 
     // Filter matches based on selection and sort by date using string comparison
@@ -424,7 +447,7 @@ const GroupDetail = () => {
                             </select>
 
                             <button
-                                onClick={() => { setStatType('players'); setStatsSortBy('goals'); }}
+                                onClick={() => { setStatType('players'); setStatsSortBy('goals'); setStatsSortOrder('desc'); }}
                                 style={{
                                     padding: '0.25rem 0.5rem',
                                     borderRadius: 'var(--radius-sm)',
@@ -437,7 +460,7 @@ const GroupDetail = () => {
                                 Oyuncular
                             </button>
                             <button
-                                onClick={() => { setStatType('goalkeepers'); setStatsSortBy('cleanSheets'); }}
+                                onClick={() => { setStatType('goalkeepers'); setStatsSortBy('cleanSheets'); setStatsSortOrder('desc'); }}
                                 style={{
                                     padding: '0.25rem 0.5rem',
                                     borderRadius: 'var(--radius-sm)',
@@ -456,18 +479,53 @@ const GroupDetail = () => {
                         <thead>
                             <tr style={{ borderBottom: '1px solid var(--border-color)', textAlign: 'left' }}>
                                 <th style={{ padding: '0.75rem' }}>Oyuncu</th>
-                                <th style={{ padding: '0.75rem', textAlign: 'center' }}>Maç</th>
+                                <th
+                                    style={{ padding: '0.75rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                                    onClick={() => handleStatSort('matches')}
+                                >
+                                    Maç {getSortIcon('matches')}
+                                </th>
                                 {statType === 'players' ? (
                                     <>
-                                        <th style={{ padding: '0.75rem', textAlign: 'center' }}>Gol</th>
-                                        <th style={{ padding: '0.75rem', textAlign: 'center' }}>Asist</th>
-                                        <th style={{ padding: '0.75rem', textAlign: 'center' }}>Ort. Puan</th>
+                                        <th
+                                            style={{ padding: '0.75rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                                            onClick={() => handleStatSort('goals')}
+                                        >
+                                            Gol {getSortIcon('goals')}
+                                        </th>
+                                        <th
+                                            style={{ padding: '0.75rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                                            onClick={() => handleStatSort('assists')}
+                                        >
+                                            Asist {getSortIcon('assists')}
+                                        </th>
+                                        <th
+                                            style={{ padding: '0.75rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                                            onClick={() => handleStatSort('rating')}
+                                        >
+                                            Ort. Puan {getSortIcon('rating')}
+                                        </th>
                                     </>
                                 ) : (
                                     <>
-                                        <th style={{ padding: '0.75rem', textAlign: 'center' }}>Kurtarış</th>
-                                        <th style={{ padding: '0.75rem', textAlign: 'center' }}>Gol Yememe</th>
-                                        <th style={{ padding: '0.75rem', textAlign: 'center' }}>Ort. Puan</th>
+                                        <th
+                                            style={{ padding: '0.75rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                                            onClick={() => handleStatSort('saves')}
+                                        >
+                                            Kurtarış {getSortIcon('saves')}
+                                        </th>
+                                        <th
+                                            style={{ padding: '0.75rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                                            onClick={() => handleStatSort('cleanSheets')}
+                                        >
+                                            Gol Yememe {getSortIcon('cleanSheets')}
+                                        </th>
+                                        <th
+                                            style={{ padding: '0.75rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                                            onClick={() => handleStatSort('rating')}
+                                        >
+                                            Ort. Puan {getSortIcon('rating')}
+                                        </th>
                                     </>
                                 )}
                             </tr>
