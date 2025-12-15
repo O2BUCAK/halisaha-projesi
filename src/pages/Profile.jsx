@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Mail, Edit2, Save, X, Instagram, Twitter, Facebook, Linkedin, Globe } from 'lucide-react';
+import { db } from '../firebase';
+import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { User, Mail, Edit2, Save, X, Instagram, Twitter, Facebook, Linkedin, Globe, Database } from 'lucide-react';
+import { toTitleCase } from '../utils';
 
 const Profile = () => {
     const { currentUser, updateProfile } = useAuth();
@@ -32,7 +35,7 @@ const Profile = () => {
         } else {
             setFormData(prev => ({
                 ...prev,
-                [name]: value
+                [name]: name === 'name' ? toTitleCase(value) : value
             }));
         }
     };
@@ -46,6 +49,101 @@ const Profile = () => {
             setTimeout(() => setMessage(null), 3000);
         } else {
             setMessage({ type: 'error', text: result.error });
+        }
+    };
+
+    const handleMigration = async () => {
+        if (!window.confirm('Veritabanındaki tüm isimleri güncelleyip, eski kayıtları düzeltecek. Emin misiniz?')) return;
+
+        try {
+            setMessage({ type: 'success', text: 'Güncelleme başladı...' });
+
+            // 1. Update Users
+            const usersRef = collection(db, 'users');
+            const usersSnap = await getDocs(usersRef);
+            const batchPromises = [];
+
+            for (const userDoc of usersSnap.docs) {
+                const userData = userDoc.data();
+                if (userData.name) {
+                    const newName = toTitleCase(userData.name);
+                    if (newName !== userData.name) {
+                        batchPromises.push(updateDoc(doc(db, 'users', userDoc.id), { name: newName }));
+                    }
+                }
+            }
+
+            // 2. Update Groups (Guest Players)
+            const groupsRef = collection(db, 'groups');
+            const groupsSnap = await getDocs(groupsRef);
+
+            for (const groupDoc of groupsSnap.docs) {
+                const groupData = groupDoc.data();
+                if (groupData.guestPlayers && groupData.guestPlayers.length > 0) {
+                    const updatedGuests = groupData.guestPlayers.map(g => ({
+                        ...g,
+                        name: toTitleCase(g.name)
+                    }));
+                    batchPromises.push(updateDoc(doc(db, 'groups', groupDoc.id), { guestPlayers: updatedGuests }));
+                }
+            }
+
+            // 3. Update Matches (Fix player team names)
+            const matchesRef = collection(db, 'matches');
+            const matchesSnap = await getDocs(matchesRef);
+
+            for (const matchDoc of matchesSnap.docs) {
+                const matchData = matchDoc.data();
+                let needsUpdate = false;
+                const updatePayload = {};
+
+                const fixPlayers = (players) => {
+                    if (!players) return [];
+                    return players.map(p => ({
+                        ...p,
+                        name: toTitleCase(p.name)
+                    }));
+                };
+
+                if (matchData.teamA) {
+                    updatePayload.teamA = fixPlayers(matchData.teamA);
+                    needsUpdate = true;
+                }
+                if (matchData.teamB) {
+                    updatePayload.teamB = fixPlayers(matchData.teamB);
+                    needsUpdate = true;
+                }
+
+                // Fix stats names if present
+                if (matchData.stats) {
+                    const newStats = {};
+                    let statsUpdated = false;
+                    Object.entries(matchData.stats).forEach(([id, stat]) => {
+                        if (stat.name) {
+                            newStats[id] = { ...stat, name: toTitleCase(stat.name) };
+                            statsUpdated = true;
+                        } else {
+                            newStats[id] = stat;
+                        }
+                    });
+                    if (statsUpdated) {
+                        updatePayload.stats = newStats;
+                        needsUpdate = true;
+                    }
+                }
+
+                if (needsUpdate) {
+                    batchPromises.push(updateDoc(doc(db, 'matches', matchDoc.id), updatePayload));
+                }
+            }
+
+            await Promise.all(batchPromises);
+            setMessage({ type: 'success', text: 'Veritabanı başarıyla güncellendi!' });
+            setTimeout(() => setMessage(null), 5000);
+
+        } catch (error) {
+            console.error("Migration Error:", error);
+            setMessage({ type: 'error', text: 'Güncelleme sırasında hata oluştu.' });
         }
     };
 
@@ -279,6 +377,16 @@ const Profile = () => {
                             </div>
                         </div>
                     )}
+
+                    <div style={{ marginTop: '2rem', borderTop: '1px solid var(--border-color)', paddingTop: '2rem' }}>
+                        <button
+                            onClick={handleMigration}
+                            className="btn btn-secondary"
+                            style={{ width: '100%', borderColor: 'var(--accent-danger)', color: 'var(--accent-danger)', justifyContent: 'center' }}
+                        >
+                            <Database size={18} /> Verileri Güncelle (Eski Kayıtları Düzelt)
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

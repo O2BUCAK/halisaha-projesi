@@ -14,6 +14,7 @@ import {
     getDoc,
     serverTimestamp
 } from 'firebase/firestore';
+import { toTitleCase } from '../utils';
 
 const DataContext = createContext();
 
@@ -190,8 +191,9 @@ export const DataProvider = ({ children }) => {
                 }
             }
 
+            const formattedGuestName = toTitleCase(guestName);
             const guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-            const newGuest = { id: guestId, name: guestName };
+            const newGuest = { id: guestId, name: formattedGuestName };
 
             const groupRef = doc(db, 'groups', groupId);
             await updateDoc(groupRef, {
@@ -230,7 +232,7 @@ export const DataProvider = ({ children }) => {
             const userDoc = await getDoc(doc(db, 'users', targetUserId));
             if (!userDoc.exists()) return { success: false, error: 'Kullanıcı bulunamadı.' };
             const userData = userDoc.data();
-            const newName = userData.nickname || userData.name;
+            const newName = userData.name || userData.nickname; // Prefer name (Name Surname)
 
             // 2. Fetch Group to remove guest
             const groupRef = doc(db, 'groups', groupId);

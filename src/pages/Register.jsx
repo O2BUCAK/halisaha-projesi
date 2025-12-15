@@ -1,7 +1,9 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { User, Mail, Lock, AlertCircle, Chrome, CheckCircle } from 'lucide-react';
+import { toTitleCase } from '../utils';
 
 const Register = () => {
     const [step, setStep] = useState('register'); // 'register' | 'verify'
@@ -44,7 +46,7 @@ const Register = () => {
             if (result.requiresVerification) {
                 setStep('verify');
                 // Simulate sending email
-                alert(`DEMO: Doğrulama kodunuz: ${result.demoCode}`);
+                alert(`DEMO: Doğrulama kodunuz: ${result.demoCode} `);
                 console.log('Verification Code:', result.demoCode);
             } else {
                 navigate('/dashboard');
@@ -165,7 +167,7 @@ const Register = () => {
                             <input
                                 type="text"
                                 value={name}
-                                onChange={(e) => setName(e.target.value)}
+                                onChange={(e) => setName(toTitleCase(e.target.value))}
                                 required
                                 placeholder="Adınız Soyadınız"
                                 style={{ paddingLeft: '3rem' }}

@@ -10,6 +10,7 @@ import {
     updateProfile as updateFirebaseProfile
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { toTitleCase } from '../utils';
 
 const AuthContext = createContext();
 
@@ -45,14 +46,15 @@ export const AuthProvider = ({ children }) => {
         try {
             const { user } = await createUserWithEmailAndPassword(auth, email, password);
 
-            // Update display name in Firebase Auth (use nickname if provided, else name)
-            await updateFirebaseProfile(user, { displayName: nickname || name });
+            // Update display name in Firebase Auth
+            const formattedName = toTitleCase(name);
+            await updateFirebaseProfile(user, { displayName: formattedName });
 
             // Create user document in Firestore
             const userData = {
                 id: user.uid,
-                name: name,
-                nickname: nickname || name, // Default to name if empty
+                name: formattedName,
+                nickname: nickname || formattedName, // Keep nickname as is if user wants specific casing, or default to name
                 email: email,
                 createdAt: new Date().toISOString(),
                 bio: '',
@@ -137,16 +139,21 @@ export const AuthProvider = ({ children }) => {
         if (!currentUser) return { success: false, error: 'Giriş yapılmamış.' };
 
         try {
-            const userDocRef = doc(db, 'users', currentUser.uid || currentUser.id);
-            await updateDoc(userDocRef, data);
+            const updates = { ...data };
+            if (updates.name) {
+                updates.name = toTitleCase(updates.name);
+            }
 
-            // Also update Firebase Auth profile if name/nickname changed
-            if ((data.name || data.nickname) && auth.currentUser) {
-                await updateFirebaseProfile(auth.currentUser, { displayName: data.nickname || data.name });
+            const userDocRef = doc(db, 'users', currentUser.uid || currentUser.id);
+            await updateDoc(userDocRef, updates);
+
+            // Also update Firebase Auth profile if name changed
+            if (updates.name && auth.currentUser) {
+                await updateFirebaseProfile(auth.currentUser, { displayName: updates.name });
             }
 
             // Update local state
-            setCurrentUser(prev => ({ ...prev, ...data }));
+            setCurrentUser(prev => ({ ...prev, ...updates }));
             return { success: true };
         } catch (error) {
             console.error("Update Profile Error:", error);

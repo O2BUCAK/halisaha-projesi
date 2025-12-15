@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { toTitleCase } from '../../utils';
 import InviteMember from '../../components/InviteMember';
 import { Users, Calendar, Plus, Copy, Check, UserPlus, Trophy, Play, Square, Mail, Trash2, Shield, ShieldAlert, Video, FileText, X, Save, Hash, Share2, Link2 } from 'lucide-react';
 import AdSenseBanner from '../../components/AdSenseBanner';
@@ -564,7 +565,7 @@ const GroupDetail = () => {
                                 type="text"
                                 placeholder="Misafir Oyuncu Adı"
                                 value={guestName}
-                                onChange={(e) => setGuestName(e.target.value)}
+                                onChange={(e) => setGuestName(toTitleCase(e.target.value))}
                                 style={{ marginBottom: '0.5rem' }}
                                 autoFocus
                             />
@@ -735,7 +736,7 @@ const GroupDetail = () => {
                             >
                                 <option value="">Bir üye seçin...</option>
                                 {memberDetails.map(m => (
-                                    <option key={m.id} value={m.id}>{m.nickname || m.name} ({m.email})</option>
+                                    <option key={m.id} value={m.id}>{m.name || m.nickname} ({m.email})</option>
                                 ))}
                             </select>
                         </div>
