@@ -494,6 +494,20 @@ export const DataProvider = ({ children }) => {
                     needsUpdate = true;
                 }
 
+                // Update Ratings
+                if (matchData.ratings && matchData.ratings[guestId]) {
+                    const newRatings = { ...matchData.ratings };
+                    // Merge votes from guest to target user
+                    // If target user already has votes (duplicate scenario), merge them
+                    newRatings[targetUserId] = {
+                        ...(newRatings[guestId] || {}),
+                        ...(newRatings[targetUserId] || {})
+                    };
+                    delete newRatings[guestId];
+                    updatePayload.ratings = newRatings;
+                    needsUpdate = true;
+                }
+
                 if (needsUpdate) {
                     return updateDoc(doc(db, 'matches', mDoc.id), updatePayload);
                 }
