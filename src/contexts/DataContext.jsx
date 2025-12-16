@@ -184,14 +184,17 @@ export const DataProvider = ({ children }) => {
     const addGuestMember = async (groupId, guestName) => {
         try {
             const group = groups.find(g => g.id === groupId);
+            const formattedGuestName = toTitleCase(guestName.trim().replace(/\s+/g, ' '));
+
             if (group && group.guestPlayers) {
-                const exists = group.guestPlayers.some(p => p.name.toLowerCase() === guestName.toLowerCase());
+                const exists = group.guestPlayers.some(p =>
+                    p.name.trim().toLowerCase().replace(/\s+/g, ' ') === formattedGuestName.toLowerCase()
+                );
                 if (exists) {
                     return { success: false, error: 'Bu isimde bir misafir oyuncu zaten var.' };
                 }
             }
 
-            const formattedGuestName = toTitleCase(guestName);
             const guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
             const newGuest = { id: guestId, name: formattedGuestName };
 
@@ -204,6 +207,41 @@ export const DataProvider = ({ children }) => {
         } catch (error) {
             console.error("Error adding guest:", error);
             return { success: false, error: 'Bir hata oluştu.' };
+        }
+    };
+
+    const cleanupGuestDuplicates = async (groupId) => {
+        try {
+            const group = groups.find(g => g.id === groupId);
+            if (!group || !group.guestPlayers) return { success: true, count: 0 };
+
+            const seen = new Map();
+            const toKeep = [];
+            const duplicatesToRemove = [];
+
+            // Identify duplicates (keep the first one found)
+            group.guestPlayers.forEach(p => {
+                const normalizedName = p.name.trim().toLowerCase().replace(/\s+/g, ' ');
+                if (seen.has(normalizedName)) {
+                    duplicatesToRemove.push(p);
+                } else {
+                    seen.set(normalizedName, p.id);
+                    toKeep.push(p);
+                }
+            });
+
+            if (duplicatesToRemove.length === 0) return { success: true, count: 0 };
+
+            // Update Group with filtered list
+            const groupRef = doc(db, 'groups', groupId);
+            await updateDoc(groupRef, {
+                guestPlayers: toKeep
+            });
+
+            return { success: true, count: duplicatesToRemove.length };
+        } catch (error) {
+            console.error("Error cleaning matches:", error);
+            return { success: false, error: 'Temizleme sırasında hata oluştu.' };
         }
     };
 
@@ -845,7 +883,8 @@ export const DataProvider = ({ children }) => {
         getJoinRequests,
         respondToJoinRequest,
         updateMatchTeams,
-        updateGroupJerseyNumbers
+        updateGroupJerseyNumbers,
+        cleanupGuestDuplicates
     };
 
     return (

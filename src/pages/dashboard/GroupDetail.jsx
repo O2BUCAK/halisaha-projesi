@@ -15,7 +15,7 @@ const GroupDetail = () => {
         getSeasonStats, getAllTimeStats, assignMatchToSeason, removeMember,
         removeGuestMember, addAdmin, removeAdmin, getUsersDetails,
         fetchGroup, sendJoinRequest, getJoinRequests, respondToJoinRequest,
-        updateGroupJerseyNumbers, mergeGuestToUser
+        updateGroupJerseyNumbers, mergeGuestToUser, cleanupGuestDuplicates
     } = useData();
     const { currentUser } = useAuth();
     const [fetchedGroup, setFetchedGroup] = useState(null);
@@ -287,6 +287,20 @@ const GroupDetail = () => {
                 // Refresh happens automatically via Snapshot
             } else {
                 alert(result.error);
+            }
+        }
+    };
+
+    const hasGuestDuplicates = group?.guestPlayers?.length > 0 &&
+        (new Set(group.guestPlayers.map(p => p.name.trim().toLowerCase().replace(/\s+/g, ' '))).size !== group.guestPlayers.length);
+
+    const handleCleanupDuplicates = async () => {
+        if (window.confirm('Yinelenen misafir oyuncular temizlenecek (ilk eklenen korunacak, diğerleri ve istatistikleri silinecektir). Devam etmek istiyor musunuz?')) {
+            const result = await cleanupGuestDuplicates(groupId);
+            if (result.success) {
+                alert(`${result.count} adet yinelenen kayıt silindi.`);
+            } else {
+                alert('Hata: ' + result.error);
             }
         }
     };
@@ -693,6 +707,18 @@ const GroupDetail = () => {
                             </div>
                         )}
                     </div>
+
+                    {isAdmin && hasGuestDuplicates && (
+                        <div style={{ padding: '0.75rem', marginBottom: '1rem', background: 'rgba(255, 165, 0, 0.1)', border: '1px solid orange', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ color: 'orange', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <ShieldAlert size={20} />
+                                <strong>Dikkat:</strong> Yinelenen misafir oyuncular tespit edildi!
+                            </span>
+                            <button onClick={handleCleanupDuplicates} className="btn" style={{ background: 'orange', color: 'white', border: 'none', padding: '0.25rem 0.75rem', fontSize: '0.9rem' }}>
+                                Tekrarlayanları Sil
+                            </button>
+                        </div>
+                    )}
 
                     {showInvite && <InviteMember groupId={groupId} />}
 
