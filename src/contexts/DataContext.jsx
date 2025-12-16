@@ -266,7 +266,7 @@ export const DataProvider = ({ children }) => {
 
             // 3. Process each Name Group
             for (const [normName, idsSet] of nameToIds.entries()) {
-                if (idsSet.size > 1) {
+                if (idsSet.size >= 1) { // Process even if single ID to fix intra-match duplicates
                     const ids = Array.from(idsSet);
                     // Master ID: Prefer the one that is in `groupData.guestPlayers` if possible.
                     // If multiple are in group list, pick the first one.
@@ -278,9 +278,9 @@ export const DataProvider = ({ children }) => {
                     const masterName = idToName.get(masterId); // Best casing
                     const idsToRemove = ids.filter(id => id !== masterId);
 
-                    if (idsToRemove.length === 0) continue;
-
-                    totalMerged += idsToRemove.length;
+                    if (idsToRemove.length > 0) {
+                        totalMerged += idsToRemove.length;
+                    }
 
                     // A. Update Matches
                     matchesSnap.docs.forEach(mDoc => {

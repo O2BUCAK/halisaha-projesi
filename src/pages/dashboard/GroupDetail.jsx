@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { toTitleCase } from '../../utils';
 import InviteMember from '../../components/InviteMember';
 import AdSenseBanner from '../../components/AdSenseBanner';
-import { Users, Calendar, Plus, Copy, Check, UserPlus, Trophy, Play, Square, Mail, Trash2, Shield, ShieldAlert, Video, FileText, Save, Hash, Share2, Star, Link2, X } from 'lucide-react';
+import { Users, Calendar, Plus, Copy, Check, UserPlus, Trophy, Play, Square, Mail, Trash2, Shield, ShieldAlert, Video, FileText, Save, Hash, Share2, Star, Link2, X, Eraser } from 'lucide-react';
 
 
 const GroupDetail = () => {
@@ -694,6 +694,9 @@ const GroupDetail = () => {
                                 </button>
                                 <button onClick={() => setShowAddGuest(!showAddGuest)} className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}>
                                     <UserPlus size={16} /> Misafir Ekle
+                                </button>
+                                <button onClick={handleCleanupDuplicates} className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }} title="Yinelenen İsimleri ve Kayıtları Temizle">
+                                    <Eraser size={16} /> Temizle
                                 </button>
                                 {isEditingJersey ? (
                                     <button onClick={saveJerseyNumbers} className="btn btn-primary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', background: 'var(--accent-success)' }}>
