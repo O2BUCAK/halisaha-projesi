@@ -212,33 +212,215 @@ export const DataProvider = ({ children }) => {
 
     const cleanupGuestDuplicates = async (groupId) => {
         try {
-            const group = groups.find(g => g.id === groupId);
-            if (!group || !group.guestPlayers) return { success: true, count: 0 };
-
-            const seen = new Map();
-            const toKeep = [];
-            const duplicatesToRemove = [];
-
-            // Identify duplicates (keep the first one found)
-            group.guestPlayers.forEach(p => {
-                const normalizedName = p.name.trim().toLowerCase().replace(/\s+/g, ' ');
-                if (seen.has(normalizedName)) {
-                    duplicatesToRemove.push(p);
-                } else {
-                    seen.set(normalizedName, p.id);
-                    toKeep.push(p);
-                }
-            });
-
-            if (duplicatesToRemove.length === 0) return { success: true, count: 0 };
-
-            // Update Group with filtered list
             const groupRef = doc(db, 'groups', groupId);
-            await updateDoc(groupRef, {
-                guestPlayers: toKeep
+            const groupSnap = await getDoc(groupRef);
+            if (!groupSnap.exists()) return { success: false, error: 'Grup bulunamadı.' };
+            const groupData = groupSnap.data();
+
+            // 1. Fetch ALL matches for this group to find all guest appearances
+            const matchesRef = collection(db, 'matches');
+            const matchesQ = query(matchesRef, where("groupId", "==", groupId));
+            const matchesSnap = await getDocs(matchesQ);
+
+            // 2. Build a map of Name -> [IDs] from both Group List and Match History
+            // We trust the Group List as the primary source for "Current" IDs, but history might have orphans.
+            const nameToIds = new Map(); // "can deveci" -> Set(id1, id2)
+            const idToName = new Map();  // id1 -> "Can Deveci"
+            const idToFullObj = new Map();
+
+            // Helper to normalize
+            const normalize = (name) => name ? name.trim().toLowerCase().replace(/\s+/g, ' ') : '';
+
+            // Scan Group List
+            (groupData.guestPlayers || []).forEach(p => {
+                const norm = normalize(p.name);
+                if (!norm) return;
+                if (!nameToIds.has(norm)) nameToIds.set(norm, new Set());
+                nameToIds.get(norm).add(p.id);
+                idToName.set(p.id, p.name); // Keep original casing preference
+                idToFullObj.set(p.id, p);
             });
 
-            return { success: true, count: duplicatesToRemove.length };
+            // Scan Matches for any "guest_" IDs that might not be in the list or are duplicates
+            matchesSnap.docs.forEach(doc => {
+                const m = doc.data();
+                const players = [...(m.teamA || []), ...(m.teamB || [])];
+                players.forEach(p => {
+                    if (p.id && typeof p.id === 'string' && p.id.startsWith('guest_')) {
+                        const norm = normalize(p.name);
+                        if (!norm) return;
+                        if (!nameToIds.has(norm)) nameToIds.set(norm, new Set());
+                        nameToIds.get(norm).add(p.id);
+
+                        // If we don't have a name/obj from group list, use this one
+                        if (!idToName.has(p.id)) {
+                            idToName.set(p.id, p.name);
+                            idToFullObj.set(p.id, p);
+                        }
+                    }
+                });
+            });
+
+            let totalMerged = 0;
+            const batchPromises = [];
+
+            // 3. Process each Name Group
+            for (const [normName, idsSet] of nameToIds.entries()) {
+                if (idsSet.size > 1) {
+                    const ids = Array.from(idsSet);
+                    // Master ID: Prefer the one that is in `groupData.guestPlayers` if possible.
+                    // If multiple are in group list, pick the first one.
+                    const currentGroupGuestIds = new Set((groupData.guestPlayers || []).map(g => g.id));
+
+                    let masterId = ids.find(id => currentGroupGuestIds.has(id));
+                    if (!masterId) masterId = ids[0]; // Fallback to first found
+
+                    const masterName = idToName.get(masterId); // Best casing
+                    const idsToRemove = ids.filter(id => id !== masterId);
+
+                    if (idsToRemove.length === 0) continue;
+
+                    totalMerged += idsToRemove.length;
+
+                    // A. Update Matches
+                    matchesSnap.docs.forEach(mDoc => {
+                        const mData = mDoc.data();
+                        let needsUpdate = false;
+                        const updatePayload = {};
+
+                        // Helper to merge players in a team array
+                        const mergeTeam = (team) => {
+                            if (!team) return team;
+                            // Check if this team has any of the IDs to remove OR the master ID
+                            const hasTarget = team.some(p => idsSet.has(p.id));
+                            if (!hasTarget) return team;
+
+                            // We must reconstruct the team. 
+                            // 1. Filter out all instances of the group (master + toRemove)
+                            // 2. Add ONE instance of Master (if any of them were present)
+
+                            const validPlayers = team.filter(p => !idsSet.has(p.id));
+                            const anyDuplicatePresent = team.some(p => idsSet.has(p.id));
+                            // Special case: Is he a goalkeeper in ANY of the instances?
+                            const wasGoalkeeper = team.some(p => idsSet.has(p.id) && p.isGoalkeeper);
+
+                            if (anyDuplicatePresent) {
+                                // Add Master back
+                                const masterObj = {
+                                    ...idToFullObj.get(masterId),
+                                    name: masterName,
+                                    id: masterId,
+                                    isGoalkeeper: wasGoalkeeper
+                                };
+                                validPlayers.push(masterObj);
+                                return validPlayers;
+                            }
+                            return team;
+                        };
+
+                        const newTeamA = mergeTeam(mData.teamA);
+                        const newTeamB = mergeTeam(mData.teamB);
+
+                        if (JSON.stringify(newTeamA) !== JSON.stringify(mData.teamA)) {
+                            updatePayload.teamA = newTeamA;
+                            needsUpdate = true;
+                        }
+                        if (JSON.stringify(newTeamB) !== JSON.stringify(mData.teamB)) {
+                            updatePayload.teamB = newTeamB;
+                            needsUpdate = true;
+                        }
+
+                        // Stats Merge
+                        if (mData.stats) {
+                            const newStats = { ...mData.stats };
+                            let statsChanged = false;
+
+                            // Check if we have stats to merge
+                            const duplicatesWithStats = idsToRemove.filter(id => newStats[id]);
+                            const masterHasStats = !!newStats[masterId];
+
+                            if (duplicatesWithStats.length > 0) {
+                                if (!newStats[masterId]) {
+                                    newStats[masterId] = { goals: 0, assists: 0, saves: 0 };
+                                }
+
+                                duplicatesWithStats.forEach(dupId => {
+                                    newStats[masterId].goals = (newStats[masterId].goals || 0) + (newStats[dupId].goals || 0);
+                                    newStats[masterId].assists = (newStats[masterId].assists || 0) + (newStats[dupId].assists || 0);
+                                    newStats[masterId].saves = (newStats[masterId].saves || 0) + (newStats[dupId].saves || 0);
+                                    delete newStats[dupId];
+                                });
+                                statsChanged = true;
+                            }
+
+                            if (statsChanged) {
+                                updatePayload.stats = newStats;
+                                needsUpdate = true;
+                            }
+                        }
+
+                        // Ratings Merge - similar logic
+                        if (mData.ratings) {
+                            // Complex to merge ratings (votes). We can merge the objects {voterId: score}.
+                            // If same voter voted for both (unlikely), take max or latest? Let's take duplicate's vote overwriting master.
+                            const newRatings = { ...mData.ratings };
+                            let ratingsChanged = false;
+
+                            const duplicatesWithRatings = idsToRemove.filter(id => newRatings[id]);
+                            if (duplicatesWithRatings.length > 0) {
+                                if (!newRatings[masterId]) newRatings[masterId] = {};
+
+                                duplicatesWithRatings.forEach(dupId => {
+                                    newRatings[masterId] = { ...newRatings[masterId], ...newRatings[dupId] };
+                                    delete newRatings[dupId];
+                                });
+                                ratingsChanged = true;
+                            }
+
+                            if (ratingsChanged) {
+                                updatePayload.ratings = newRatings;
+                                needsUpdate = true;
+                            }
+                        }
+
+                        if (needsUpdate) {
+                            batchPromises.push(updateDoc(doc(db, 'matches', mDoc.id), updatePayload));
+                        }
+                    });
+
+                    // B. Update Group List (Remove duplicates from the array)
+                    // We need to act on the LATEST group data, but we can just filter the current list we fetched.
+                    // But wait, we iterate on `nameToIds`. We should do one final update to Group.
+                }
+            }
+
+            if (totalMerged === 0) return { success: true, count: 0 };
+
+            await Promise.all(batchPromises);
+
+            // 4. Final Group Update: Re-read group to be safe or just filter the one we have?
+            // Safer to just filter 'groupData.guestPlayers' to only include Master IDs for names we processed, 
+            // and merge any others. 
+            // Actually simpler: Just filter the `guestPlayers` array.
+            // For every group of IDs in nameToIds, we only strictly keep the MasterID in the guest list.
+
+            const mastersToKeep = new Set();
+            for (const [_, idsSet] of nameToIds.entries()) {
+                const ids = Array.from(idsSet);
+                // logic repeated from above to deterministic
+                const currentGroupGuestIds = new Set((groupData.guestPlayers || []).map(g => g.id));
+                let masterId = ids.find(id => currentGroupGuestIds.has(id));
+                if (!masterId) masterId = ids[0];
+                mastersToKeep.add(masterId);
+            }
+
+            // The new guest list should ONLY contain people who were already in the group list,
+            // but filtered to be the master version.
+            const newGuestPlayers = (groupData.guestPlayers || []).filter(p => mastersToKeep.has(p.id));
+
+            await updateDoc(groupRef, { guestPlayers: newGuestPlayers });
+
+            return { success: true, count: totalMerged };
         } catch (error) {
             console.error("Error cleaning matches:", error);
             return { success: false, error: 'Temizleme sırasında hata oluştu.' };
