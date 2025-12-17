@@ -1,17 +1,23 @@
-# React + Vite
+# Halı Saha İstatistik Platformu
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Arkadaş gruplarınızla yaptığınız halı saha maçlarını profesyonel bir lige dönüştürün! Bu platform sayesinde maçlarınızı kaydedebilir, oyuncu istatistiklerini (gol, asist, puan) takip edebilir ve sezonluk performans analizleri yapabilirsiniz.
 
-Currently, two official plugins are available:
+## Özellikler
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+*   **Grup Yönetimi:** Kendi arkadaş grubunuzu oluşturun veya davet kodu ile katılın.
+*   **Detaylı İstatistikler:** Gol, asist, maç onayı ve maçın adamı oylamaları.
+*   **Sezon Sistemi:** Maçları sezonlara bölerek dönemsel şampiyonları belirleyin.
+*   **Misafir Oyuncu Desteği:** Gruba üye olmayan arkadaşlarınızı misafir olarak ekleyip istatistiklerini tutun.
+*   **Profil Kartları:** Kendi oyuncu kartınızı oluşturun.
 
-## React Compiler
+## Nasıl Kullanılır?
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1.  **Kayıt Ol:** Sisteme giriş yapın.
+2.  **Grup Kur/Katıl:** Yeni bir grup oluşturun veya mevcut bir gruba kod ile katılın.
+3.  **Maç Ekle:** Oynanan maçın tarihini, sahasını ve kadrolarını girin.
+4.  **İstatistik Gir:** Maç bitiminde skorları, golleri ve asistleri işleyin.
+5.  **Takip Et:** Liderlik tablosundan kimin krallığa oynadığını izleyin!
 
-## Expanding the ESLint configuration
+## Geliştirici Notları
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-"# halisaha-projesi" 
+Bu proje **React (Vite)** ve **Firebase** kullanılarak "Vibe Coding" felsefesiyle geliştirilmiştir.
